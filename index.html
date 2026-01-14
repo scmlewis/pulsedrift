@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="PulseDrift - A zen meditation timer with breathing exercises and mindfulness features">
+    <title>PulseDrift - Zen Meditation Timer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Sand Pattern Overlay -->
+    <div class="sand-pattern"></div>
+
+    <!-- Main App Container -->
+    <div class="app-container" id="appContainer">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg class="lotus-icon" viewBox="0 0 100 100" width="40" height="40">
+                    <path class="lotus-petal" d="M50 10 Q60 30 50 50 Q40 30 50 10" fill="currentColor" opacity="0.9"/>
+                    <path class="lotus-petal" d="M30 25 Q45 35 50 50 Q35 40 30 25" fill="currentColor" opacity="0.8"/>
+                    <path class="lotus-petal" d="M70 25 Q55 35 50 50 Q65 40 70 25" fill="currentColor" opacity="0.8"/>
+                    <path class="lotus-petal" d="M20 45 Q40 45 50 50 Q35 55 20 45" fill="currentColor" opacity="0.7"/>
+                    <path class="lotus-petal" d="M80 45 Q60 45 50 50 Q65 55 80 45" fill="currentColor" opacity="0.7"/>
+                    <ellipse cx="50" cy="55" rx="15" ry="8" fill="currentColor" opacity="0.6"/>
+                </svg>
+                <h1>PulseDrift</h1>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="themeToggle" title="Toggle Light/Dark Theme">
+                    <svg class="sun-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="moon-icon hidden" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="focusModeBtn" title="Focus Mode (F)">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="historyBtn" title="Session History">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="settingsBtn" title="Settings">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v10M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h10M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Focus Mode Exit Button (visible only in focus mode) -->
+            <button class="focus-mode-exit hidden" id="focusModeExit" title="Exit Focus Mode (F or Esc)">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Desktop Two-Column Layout Wrapper -->
+        <div class="content-wrapper">
+            <!-- Left Sidebar (Desktop Controls) -->
+            <aside class="desktop-sidebar">
+                <!-- Mini Stats Widget (NEW) -->
+                <section class="mini-stats-widget" id="miniStatsWidget">
+                    <div class="mini-stats-summary">
+                        <div class="mini-stat">
+                            <span class="mini-stat-value" id="miniStatToday">0</span>
+                            <span class="mini-stat-label">min today</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-stat-icon">🔥</span>
+                            <span class="mini-stat-value" id="miniStatStreak">0</span>
+                        </div>
+                    </div>
+                    <button class="mini-stats-expand" id="miniStatsExpand" title="View detailed stats">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <!-- Expanded details (hidden by default) -->
+                    <div class="mini-stats-details hidden" id="miniStatsDetails">
+                        <div class="mini-stat-detail">
+                            <span class="mini-stat-detail-label">Total Sessions</span>
+                            <span class="mini-stat-detail-value" id="miniStatTotalSessions">0</span>
+                        </div>
+                        <div class="mini-stat-detail">
+                            <span class="mini-stat-detail-label">All-Time Minutes</span>
+                            <span class="mini-stat-detail-value" id="miniStatTotalMinutes">0</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Daily Quote -->
+                <section class="quote-section" id="quoteSection">
+                    <p class="daily-quote" id="dailyQuote">"The mind is like water. When it's turbulent, it's difficult to see. When it's calm, everything becomes clear."</p>
+                    <span class="quote-author" id="quoteAuthor">— Prasad Mahes</span>
+                </section>
+
+                <!-- Preset Buttons -->
+                <div class="presets" id="presets">
+                    <button class="preset-btn" data-minutes="5">5 min</button>
+                    <button class="preset-btn active" data-minutes="10">10 min</button>
+                    <button class="preset-btn" data-minutes="15">15 min</button>
+                    <button class="preset-btn" data-minutes="20">20 min</button>
+                    <button class="preset-btn" data-minutes="30">30 min</button>
+                    <button class="preset-btn custom-btn" id="customTimeBtn">Custom</button>
+                </div>
+
+                <!-- Custom Time Input -->
+                <div class="custom-time-input hidden" id="customTimeInput">
+                    <input type="number" id="customMinutes" min="1" max="999" placeholder="Min" value="10">
+                    <span>:</span>
+                    <input type="number" id="customSeconds" min="0" max="59" placeholder="Sec" value="00">
+                    <button class="set-time-btn" id="setCustomTime">Set</button>
+                </div>
+
+                <!-- Integrated Breathing Guide (Desktop) -->
+                <section class="breathing-guide-sidebar" id="breathingGuideSidebar">
+                    <button class="breathing-guide-toggle" id="breathingGuideToggle">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 8v8M8 12h8"/>
+                        </svg>
+                        <span>Breathing Guide</span>
+                        <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <div class="breathing-guide-content hidden" id="breathingGuideContent">
+                        <div class="breathing-visual-small">
+                            <div class="breath-circle-small" id="breathCircleSmall">
+                                <span class="breath-instruction-small" id="breathInstructionSmall">Ready</span>
+                            </div>
+                        </div>
+                        <select id="breathingPatternSidebar" class="sound-select">
+                            <option value="4-4">Calm Breathing (4-4)</option>
+                            <option value="4-7-8">Relaxing Breath (4-7-8)</option>
+                            <option value="4-4-4-4">Box Breathing (4-4-4-4)</option>
+                        </select>
+                        <button class="breath-start-btn-small" id="breathStartBtnSmall">Start</button>
+                    </div>
+                </section>
+
+                <!-- Intention Setting (MOVED UP - Higher Priority) -->
+                <section class="intention-section">
+                    <label for="intentionInput" class="intention-label">
+                        <svg class="intention-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        Today's Intention
+                    </label>
+                    <div class="intention-input-wrapper">
+                        <input type="text" id="intentionInput" placeholder="Set your meditation intention..." maxlength="100">
+                        <span class="char-counter" id="charCounter">0/100</span>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Main Timer Area (Center/Right) -->
+            <main class="timer-section">
+                <!-- Timer Circle -->
+                <div class="timer-container">
+                    <div class="timer-ring">
+                        <svg class="timer-svg" viewBox="0 0 200 200">
+                            <circle class="timer-track" cx="100" cy="100" r="90" fill="none" stroke-width="4"/>
+                            <circle class="timer-progress" id="timerProgress" cx="100" cy="100" r="90" fill="none" stroke-width="4" stroke-linecap="round"/>
+                        </svg>
+                        <div class="timer-display">
+                            <span class="timer-time" id="timerDisplay">10:00</span>
+                            <span class="timer-label" id="timerLabel">Ready</span>
+                        </div>
+                    </div>
+                    <!-- Breathing Circle (overlays timer when active) -->
+                    <div class="breathing-circle" id="breathingCircle">
+                        <div class="breath-ring"></div>
+                        <span class="breath-text" id="breathText">Breathe</span>
+                    </div>
+                </div>
+
+                <!-- Timer Controls -->
+                <div class="controls">
+                    <button class="control-btn secondary" id="resetBtn" title="Reset">
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                        </svg>
+                    </button>
+                    <button class="control-btn primary" id="startBtn" title="Start">
+                        <svg class="play-icon" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        <svg class="pause-icon hidden" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+                            <rect x="6" y="4" width="4" height="16"/>
+                            <rect x="14" y="4" width="4" height="16"/>
+                        </svg>
+                    </button>
+                    <button class="control-btn secondary" id="breathingBtn" title="Breathing Guide">
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 8v8M8 12h8"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Desktop Preset Buttons (Below Controls) -->
+                <div class="presets-desktop" id="presetsDesktop">
+                    <button class="preset-btn" data-minutes="5">5 min</button>
+                    <button class="preset-btn active" data-minutes="10">10 min</button>
+                    <button class="preset-btn" data-minutes="15">15 min</button>
+                    <button class="preset-btn" data-minutes="20">20 min</button>
+                    <button class="preset-btn" data-minutes="30">30 min</button>
+                    <button class="preset-btn custom-btn" id="customTimeBtnDesktop">Custom</button>
+                </div>
+
+                <!-- Custom Time Input (Desktop) -->
+                <div class="custom-time-input custom-time-desktop hidden" id="customTimeInputDesktop">
+                    <input type="number" id="customMinutesDesktop" min="1" max="999" placeholder="Min" value="10">
+                    <span>:</span>
+                    <input type="number" id="customSecondsDesktop" min="0" max="59" placeholder="Sec" value="00">
+                    <button class="set-time-btn" id="setCustomTimeDesktop">Set</button>
+                </div>
+
+                <!-- Intention Display (shows during meditation) -->
+                <div class="intention-display hidden" id="intentionDisplay">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span id="intentionText"></span>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- History Panel (Slide-in) -->
+    <aside class="history-panel" id="historyPanel">
+        <div class="panel-header">
+            <h2>Session History</h2>
+            <button class="close-btn" id="closeHistoryBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="stats-summary">
+            <div class="stat-card">
+                <span class="stat-value" id="totalSessions">0</span>
+                <span class="stat-label">Sessions</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="totalMinutes">0</span>
+                <span class="stat-label">Minutes</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="currentStreak">0</span>
+                <span class="stat-label">Day Streak</span>
+            </div>
+        </div>
+        
+        <!-- Calendar Heatmap -->
+        <div class="calendar-heatmap-section">
+            <h3 class="heatmap-title">Your Meditation Journey</h3>
+            <div class="calendar-heatmap" id="calendarHeatmap">
+                <!-- Heatmap will be generated here -->
+            </div>
+            <div class="heatmap-legend">
+                <span class="legend-label">Less</span>
+                <div class="legend-box" data-level="0"></div>
+                <div class="legend-box" data-level="1"></div>
+                <div class="legend-box" data-level="2"></div>
+                <div class="legend-box" data-level="3"></div>
+                <div class="legend-box" data-level="4"></div>
+                <span class="legend-label">More</span>
+            </div>
+        </div>
+        
+        <!-- Export Data Button -->
+        <button class="export-data-btn" id="exportDataBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export Data
+        </button>
+        
+        <div class="history-list" id="historyList">
+            <!-- Sessions will be populated here -->
+        </div>
+        <button class="clear-history-btn" id="clearHistoryBtn">Clear History</button>
+    </aside>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay hidden" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" id="closeSettingsBtn">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Audio Settings Section -->
+                <div class="setting-section">
+                    <h2 class="setting-section-title">Audio Settings</h2>
+                    
+                    <div class="setting-group">
+                        <h3>Bell Sound</h3>
+                        <p class="setting-desc">Choose your meditation bell</p>
+                        <select id="bellSound" class="sound-select">
+                            <option value="singing-bowl">Tibetan Singing Bowl</option>
+                            <option value="soft-gong">Soft Gong</option>
+                            <option value="bell">Temple Bell</option>
+                            <option value="silence">Silence</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <h3>Ambient Sound</h3>
+                        <p class="setting-desc">Background ambience during meditation</p>
+                        <select id="ambientSound" class="sound-select">
+                            <option value="silence">Silence</option>
+                            <option value="rain">Rain</option>
+                            <option value="waves">Ocean Waves</option>
+                            <option value="forest">Forest Birds</option>
+                            <option value="wind">Gentle Wind</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <h3>Volume</h3>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="70" class="volume-slider">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <h3>Interval Bell</h3>
+                        <p class="setting-desc">Play a gentle bell at regular intervals</p>
+                        <select id="intervalBell" class="sound-select">
+                            <option value="0">Off</option>
+                            <option value="1">Every 1 minute</option>
+                            <option value="5">Every 5 minutes</option>
+                            <option value="10">Every 10 minutes</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Session Templates Section -->
+                <div class="setting-section">
+                    <h2 class="setting-section-title">Session Templates</h2>
+                    
+                    <div class="templates-list" id="templatesList">
+                        <!-- Templates will be populated here -->
+                    </div>
+                    <button class="save-template-btn" id="saveTemplateBtn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Save Current as Template
+                    </button>
+                </div>
+                
+                <!-- Breathing Settings Section -->
+                <div class="setting-section">
+                    <h2 class="setting-section-title">Breathing Settings</h2>
+                    
+                    <div class="setting-group">
+                        <h3>Breathing Pattern</h3>
+                        <p class="setting-desc">Choose your preferred breathing exercise</p>
+                        <select id="breathingPattern" class="sound-select">
+                            <option value="4-4">Calm (4-4)</option>
+                            <option value="4-7-8">Relaxing (4-7-8)</option>
+                            <option value="4-4-4-4">Box Breathing (4-4-4-4)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <h3>Auto-start Breathing</h3>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="autoBreathingToggle">
+                            <span class="toggle-switch"></span>
+                            Start breathing guide with timer
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- App Settings Section -->
+                <div class="setting-section">
+                    <h2 class="setting-section-title">App Settings</h2>
+                    
+                    <div class="setting-group">
+                        <h3>Notifications</h3>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="notificationsToggle" checked>
+                            <span class="toggle-switch"></span>
+                            Enable browser notifications
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breathing Guide Modal -->
+    <div class="modal-overlay hidden" id="breathingModal">
+        <div class="modal breathing-modal">
+            <div class="modal-header">
+                <h2>Breathing Guide</h2>
+                <button class="close-btn" id="closeBreathingBtn">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body breathing-body">
+                <div class="breathing-visual">
+                    <div class="breath-circle-large" id="breathCircleLarge">
+                        <span class="breath-instruction" id="breathInstruction">Inhale</span>
+                        <span class="breath-counter" id="breathCounter">4</span>
+                    </div>
+                </div>
+                <div class="breathing-controls">
+                    <select id="breathingPatternSelect" class="sound-select">
+                        <option value="4-4">Calm Breathing (4-4)</option>
+                        <option value="4-7-8">Relaxing Breath (4-7-8)</option>
+                        <option value="4-4-4-4">Box Breathing (4-4-4-4)</option>
+                    </select>
+                    <button class="breath-start-btn" id="breathStartBtn">Start</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Template Modal -->
+    <div class="modal-overlay hidden" id="saveTemplateModal">
+        <div class="modal save-template-modal">
+            <div class="modal-header">
+                <h2>Save Session Template</h2>
+                <button class="close-btn" id="closeSaveTemplateBtn">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="template-form">
+                    <label for="templateName" class="template-label">Template Name</label>
+                    <input type="text" id="templateName" placeholder="e.g., Morning Clarity" maxlength="50">
+                    <div class="template-preview">
+                        <div class="preview-item">
+                            <span class="preview-label">Duration:</span>
+                            <span class="preview-value" id="previewDuration">10 min</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Bell:</span>
+                            <span class="preview-value" id="previewBell">Singing Bowl</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Ambient:</span>
+                            <span class="preview-value" id="previewAmbient">Silence</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Breathing:</span>
+                            <span class="preview-value" id="previewBreathing">Calm (4-4)</span>
+                        </div>
+                    </div>
+                    <div class="template-actions">
+                        <button class="template-cancel-btn" id="templateCancelBtn">Cancel</button>
+                        <button class="template-save-btn" id="templateSaveBtn">Save Template</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Complete Overlay -->
+    <div class="complete-overlay hidden" id="completeOverlay">
+        <div class="complete-content">
+            <svg class="complete-lotus" viewBox="0 0 100 100" width="80" height="80">
+                <path class="lotus-petal" d="M50 10 Q60 30 50 50 Q40 30 50 10" fill="currentColor"/>
+                <path class="lotus-petal" d="M30 25 Q45 35 50 50 Q35 40 30 25" fill="currentColor"/>
+                <path class="lotus-petal" d="M70 25 Q55 35 50 50 Q65 40 70 25" fill="currentColor"/>
+                <path class="lotus-petal" d="M20 45 Q40 45 50 50 Q35 55 20 45" fill="currentColor"/>
+                <path class="lotus-petal" d="M80 45 Q60 45 50 50 Q65 55 80 45" fill="currentColor"/>
+                <ellipse cx="50" cy="55" rx="15" ry="8" fill="currentColor"/>
+            </svg>
+            <h2>Session Complete</h2>
+            <p class="complete-duration" id="completeDuration">10 minutes of mindfulness</p>
+            <div class="complete-intention hidden" id="completeIntention">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span id="completeIntentionText"></span>
+            </div>
+            <p class="complete-message" id="completeMessage">Well done. Carry this peace with you.</p>
+            
+            <!-- Achievement Badge (if milestone reached) -->
+            <div class="achievement-badge hidden" id="achievementBadge">
+                <div class="achievement-icon" id="achievementIcon">🏆</div>
+                <div class="achievement-text">
+                    <div class="achievement-title" id="achievementTitle">Achievement Unlocked!</div>
+                    <div class="achievement-desc" id="achievementDesc">10 sessions completed</div>
+                </div>
+            </div>
+            
+            <!-- Meditation Journal -->
+            <div class="journal-section">
+                <label class="journal-label">How was your session?</label>
+                <div class="mood-selector" id="moodSelector">
+                    <button class="mood-btn" data-mood="peaceful" title="Peaceful">😌</button>
+                    <button class="mood-btn" data-mood="focused" title="Focused">😊</button>
+                    <button class="mood-btn" data-mood="neutral" title="Neutral">😐</button>
+                    <button class="mood-btn" data-mood="restless" title="Restless">😓</button>
+                </div>
+                <textarea 
+                    id="journalNotes" 
+                    class="journal-textarea" 
+                    placeholder="Any insights or reflections? (optional)" 
+                    maxlength="500"
+                    rows="3"
+                ></textarea>
+                <span class="journal-char-counter" id="journalCharCounter">0/500</span>
+            </div>
+            
+            <button class="complete-btn" id="completeBtn">Continue</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container (NEW) -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Particle Canvas for Organic Blobs (NEW) -->
+    <canvas class="particle-canvas" id="particleCanvas"></canvas>
+
+    <script src="app.js"></script>
+    <script src="enhancements.js"></script>
+</body>
+</html>
