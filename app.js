@@ -32,6 +32,7 @@ const state = {
         bellSound: 'singing-bowl',
         ambientSound: 'silence',
         ambientNode: null,
+        ambientNodes: [],
         isAmbientPlaying: false,
         previewTimeout: null
     },
@@ -39,7 +40,6 @@ const state = {
         intervalBell: 0, // minutes, 0 = off
         breathingPattern: '4-4',
         notifications: true,
-        lightTheme: false,
         autoBreathing: false
     },
     sessions: [],
@@ -126,6 +126,7 @@ const DOM = {
     
     // Focus Mode
     focusModeBtn: document.getElementById('focusModeBtn'),
+    focusModeExit: document.getElementById('focusModeExit'),
     appContainer: document.getElementById('appContainer'),
     
     // Complete Overlay
@@ -926,7 +927,32 @@ function stopAmbientSound() {
         }
         state.audio.ambientNode = null;
     }
+    if (state.audio.ambientNodes.length > 0) {
+        state.audio.ambientNodes.forEach(node => {
+            if (!node) return;
+            try {
+                if (typeof node.stop === 'function') {
+                    node.stop();
+                }
+            } catch (e) {
+                // Node already stopped
+            }
+            try {
+                if (typeof node.disconnect === 'function') {
+                    node.disconnect();
+                }
+            } catch (e) {
+                // Node already disconnected
+            }
+        });
+        state.audio.ambientNodes = [];
+    }
     state.audio.isAmbientPlaying = false;
+}
+
+function registerAmbientNode(node) {
+    if (!node) return;
+    state.audio.ambientNodes.push(node);
 }
 
 function createRainSound(ctx) {
@@ -963,6 +989,10 @@ function createRainSound(ctx) {
     
     noise.start();
     state.audio.ambientNode = noise;
+    registerAmbientNode(noise);
+    registerAmbientNode(filter);
+    registerAmbientNode(highpass);
+    registerAmbientNode(gain);
 }
 
 function createWavesSound(ctx) {
@@ -981,17 +1011,18 @@ function createWavesSound(ctx) {
     // Lowpass filter for ocean-like sound
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 500;
+    filter.frequency.value = 420;
+    filter.Q.value = 0.8;
     
     // LFO to modulate volume (wave motion)
     const lfo = ctx.createOscillator();
     const lfoGain = ctx.createGain();
     lfo.type = 'sine';
-    lfo.frequency.value = 0.1; // Slow wave rhythm
-    lfoGain.gain.value = 0.05;
+    lfo.frequency.value = 0.08; // Slow wave rhythm
+    lfoGain.gain.value = 0.12;
     
     const gain = ctx.createGain();
-    gain.gain.value = 0.2;
+    gain.gain.value = 0.32;
     
     lfo.connect(lfoGain);
     lfoGain.connect(gain.gain);
@@ -1003,6 +1034,11 @@ function createWavesSound(ctx) {
     noise.start();
     lfo.start();
     state.audio.ambientNode = noise;
+    registerAmbientNode(noise);
+    registerAmbientNode(lfo);
+    registerAmbientNode(lfoGain);
+    registerAmbientNode(filter);
+    registerAmbientNode(gain);
 }
 
 function createForestSound(ctx) {
@@ -1021,11 +1057,11 @@ function createForestSound(ctx) {
     
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.value = 2000;
-    filter.Q.value = 1;
+    filter.frequency.value = 1600;
+    filter.Q.value = 0.7;
     
     const gain = ctx.createGain();
-    gain.gain.value = 0.08;
+    gain.gain.value = 0.12;
     
     noise.connect(filter);
     filter.connect(gain);
@@ -1033,6 +1069,9 @@ function createForestSound(ctx) {
     
     noise.start();
     state.audio.ambientNode = noise;
+    registerAmbientNode(noise);
+    registerAmbientNode(filter);
+    registerAmbientNode(gain);
     
     // Bird chirps (occasional)
     scheduleBirdChirps(ctx);
@@ -1065,7 +1104,7 @@ function playBirdChirp(ctx) {
         osc.frequency.exponentialRampToValueAtTime(baseFreq + i * 200, now + i * 0.1 + 0.1);
         
         gain.gain.setValueAtTime(0, now + i * 0.1);
-        gain.gain.linearRampToValueAtTime(0.03, now + i * 0.1 + 0.02);
+        gain.gain.linearRampToValueAtTime(0.06, now + i * 0.1 + 0.02);
         gain.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.1);
         
         osc.connect(gain);
@@ -1092,25 +1131,25 @@ function createWindSound(ctx) {
     // Multiple bandpass filters for wind character
     const filter1 = ctx.createBiquadFilter();
     filter1.type = 'bandpass';
-    filter1.frequency.value = 300;
-    filter1.Q.value = 2;
+    filter1.frequency.value = 240;
+    filter1.Q.value = 1.4;
     
     const filter2 = ctx.createBiquadFilter();
     filter2.type = 'bandpass';
-    filter2.frequency.value = 800;
-    filter2.Q.value = 1;
+    filter2.frequency.value = 600;
+    filter2.Q.value = 0.9;
     
     // LFO for wind gusts
     const lfo = ctx.createOscillator();
     const lfoGain = ctx.createGain();
     lfo.type = 'sine';
-    lfo.frequency.value = 0.05;
-    lfoGain.gain.value = 200;
+    lfo.frequency.value = 0.04;
+    lfoGain.gain.value = 260;
     lfo.connect(lfoGain);
     lfoGain.connect(filter1.frequency);
     
     const gain = ctx.createGain();
-    gain.gain.value = 0.12;
+    gain.gain.value = 0.18;
     
     noise.connect(filter1);
     filter1.connect(filter2);
@@ -1120,6 +1159,12 @@ function createWindSound(ctx) {
     noise.start();
     lfo.start();
     state.audio.ambientNode = noise;
+    registerAmbientNode(noise);
+    registerAmbientNode(lfo);
+    registerAmbientNode(lfoGain);
+    registerAmbientNode(filter1);
+    registerAmbientNode(filter2);
+    registerAmbientNode(gain);
 }
 
 // =============================================
@@ -1312,6 +1357,9 @@ function toggleFocusMode() {
     state.focusMode = !state.focusMode;
     document.body.classList.toggle('focus-mode', state.focusMode);
     DOM.focusModeBtn.classList.toggle('active', state.focusMode);
+    if (DOM.focusModeExit) {
+        DOM.focusModeExit.classList.toggle('hidden', !state.focusMode);
+    }
 }
 
 // =============================================
@@ -2016,7 +2064,7 @@ async function runAmbientSoundTests() {
 
         await new Promise(resolve => setTimeout(resolve, 150));
 
-        const hasNode = Boolean(state.audio.ambientNode);
+        const hasNode = Boolean(state.audio.ambientNode) || state.audio.ambientNodes.length > 0;
         const isPlaying = state.audio.isAmbientPlaying === true;
 
         results.push({

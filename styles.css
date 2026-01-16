@@ -67,42 +67,6 @@
     --transition-breath: 4000ms ease-in-out;
 }
 
-/* Light Theme - Soft Pastel Zen */
-.light-theme {
-    /* Soft, calming backgrounds */
-    --bg-primary: #fafbfc;
-    --bg-secondary: #f5f7fa;
-    --bg-tertiary: #eef2f7;
-    --bg-card: #ffffff;
-    
-    /* Gentle text colors */
-    --text-primary: #2d3748;
-    --text-secondary: #6b7c93;
-    --text-muted: #9aa5b8;
-    
-    /* Soft pastel accents */
-    --accent-primary: #6eb4f7;
-    --accent-secondary: #8ac4f9;
-    --accent-zen: #52c997;
-    --accent-lotus: #b798f5;
-    --accent-warm: #ffb366;
-    
-    /* Subtle borders */
-    --border-color: #dde4ed;
-    --border-subtle: #e9eff6;
-    
-    /* Zen effects with soft pastels */
-    --zen-water: rgba(110, 180, 247, 0.12);
-    --zen-ripple: rgba(82, 201, 151, 0.1);
-    --zen-sand: rgba(255, 179, 102, 0.08);
-    --zen-glow: rgba(183, 152, 245, 0.18);
-    
-    /* Softer shadows for light mode */
-    --shadow-sm: 0 1px 3px rgba(45, 55, 72, 0.08);
-    --shadow-md: 0 4px 12px rgba(45, 55, 72, 0.12);
-    --shadow-lg: 0 8px 24px rgba(45, 55, 72, 0.15);
-    --shadow-glow: 0 0 40px rgba(110, 180, 247, 0.15);
-}
 
 /* =============================================
    Base Styles
@@ -2276,11 +2240,6 @@ body {
     mix-blend-mode: screen;
 }
 
-/* Light theme particle adjustments */
-.light-theme .particle-canvas {
-    opacity: 0.3;
-    mix-blend-mode: multiply;
-}
 
 /* =============================================
    PHASE 5 & 6: Enhanced Animations (Prep)

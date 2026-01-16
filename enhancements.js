@@ -1,6 +1,6 @@
 /**
  * PulseDrift Enhancements
- * Additional features: Templates, Journal, Stats, Achievements, Theme Toggle
+ * Additional features: Templates, Journal, Stats, Achievements
  */
 
 // =============================================
@@ -20,11 +20,6 @@ const enhancementState = {
 // =============================================
 
 const enhancementDOM = {
-    // Theme Toggle
-    themeToggle: document.getElementById('themeToggle'),
-    sunIcon: document.querySelector('.sun-icon'),
-    moonIcon: document.querySelector('.moon-icon'),
-    
     // Focus Mode Exit
     focusModeExit: document.getElementById('focusModeExit'),
     
@@ -60,50 +55,6 @@ const enhancementDOM = {
     achievementTitle: document.getElementById('achievementTitle'),
     achievementDesc: document.getElementById('achievementDesc')
 };
-
-// =============================================
-// Feature #1: Light Theme Toggle
-// =============================================
-
-function initThemeToggle() {
-    // Load saved theme preference
-    const savedTheme = localStorage.getItem('pulsedrift-theme') || 'dark';
-    applyTheme(savedTheme);
-    
-    // Auto-detect system preference if no saved theme
-    if (!localStorage.getItem('pulsedrift-theme')) {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        applyTheme(prefersDark ? 'dark' : 'light');
-    }
-    
-    // Theme toggle button
-    if (enhancementDOM.themeToggle) {
-        enhancementDOM.themeToggle.addEventListener('click', toggleTheme);
-    }
-}
-
-function applyTheme(theme) {
-    if (theme === 'light') {
-        document.body.classList.add('light-theme');
-        if (enhancementDOM.sunIcon) enhancementDOM.sunIcon.classList.add('hidden');
-        if (enhancementDOM.moonIcon) enhancementDOM.moonIcon.classList.remove('hidden');
-    } else {
-        document.body.classList.remove('light-theme');
-        if (enhancementDOM.sunIcon) enhancementDOM.sunIcon.classList.remove('hidden');
-        if (enhancementDOM.moonIcon) enhancementDOM.moonIcon.classList.add('hidden');
-    }
-    localStorage.setItem('pulsedrift-theme', theme);
-}
-
-function toggleTheme() {
-    const isLight = document.body.classList.contains('light-theme');
-    applyTheme(isLight ? 'dark' : 'light');
-    
-    // Show toast notification
-    if (typeof toast !== 'undefined') {
-        toast.show(`Switched to ${isLight ? 'dark' : 'light'} theme`, 'success');
-    }
-}
 
 // =============================================
 // Feature #9: Focus Mode Exit Button
@@ -730,7 +681,6 @@ function enhanceCompleteHandler() {
 function initEnhancements() {
     console.log('🚀 Initializing PulseDrift Enhancements...');
     
-    initThemeToggle();
     initFocusModeExit();
     initSessionTemplates();
     initEnhancedStats();
@@ -757,6 +707,5 @@ if (document.readyState === 'loading') {
 // Make functions globally available
 window.loadTemplate = loadTemplate;
 window.deleteTemplate = deleteTemplate;
-window.toggleTheme = toggleTheme;
 window.fadeInAmbientSound = fadeInAmbientSound;
 window.playMilestoneCompletionSound = playMilestoneCompletionSound;
