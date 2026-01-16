@@ -913,6 +913,9 @@ function startAmbientSound() {
         case 'wind':
             createWindSound(ctx);
             break;
+        case 'zen':
+            createZenMusic(ctx);
+            break;
     }
     
     state.audio.isAmbientPlaying = true;
@@ -1165,6 +1168,95 @@ function createWindSound(ctx) {
     registerAmbientNode(filter1);
     registerAmbientNode(filter2);
     registerAmbientNode(gain);
+}
+
+function createZenMusic(ctx) {
+    const now = ctx.currentTime;
+
+    const baseGain = ctx.createGain();
+    baseGain.gain.value = 0.14;
+    baseGain.connect(state.audio.masterGain);
+
+    const lowpass = ctx.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.value = 1200;
+    lowpass.Q.value = 0.7;
+    lowpass.connect(baseGain);
+
+    const reverbGain = ctx.createGain();
+    reverbGain.gain.value = 0.35;
+
+    // Simple delay for spaciousness
+    const delay = ctx.createDelay(2.0);
+    delay.delayTime.value = 0.45;
+    const feedback = ctx.createGain();
+    feedback.gain.value = 0.25;
+    delay.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(reverbGain);
+    reverbGain.connect(baseGain);
+
+    const chord = [220, 277.18, 329.63, 392.0];
+
+    chord.forEach((freq, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = index % 2 === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.0, now);
+        gain.gain.linearRampToValueAtTime(0.08, now + 2.5);
+        gain.gain.linearRampToValueAtTime(0.04, now + 6);
+
+        osc.connect(gain);
+        gain.connect(lowpass);
+        gain.connect(delay);
+
+        osc.start(now);
+        registerAmbientNode(osc);
+        registerAmbientNode(gain);
+    });
+
+    const melodyScale = [392, 440, 494, 523.25, 587.33, 659.25];
+    const melody = ctx.createOscillator();
+    const melodyGain = ctx.createGain();
+    melody.type = 'sine';
+    melodyGain.gain.value = 0.05;
+    melody.connect(melodyGain);
+    melodyGain.connect(lowpass);
+
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.value = 0.12;
+    lfoGain.gain.value = 6;
+    lfo.connect(lfoGain);
+    lfoGain.connect(melody.frequency);
+
+    melody.start(now);
+    lfo.start(now);
+
+    registerAmbientNode(melody);
+    registerAmbientNode(melodyGain);
+    registerAmbientNode(lfo);
+    registerAmbientNode(lfoGain);
+    registerAmbientNode(lowpass);
+    registerAmbientNode(delay);
+    registerAmbientNode(feedback);
+    registerAmbientNode(reverbGain);
+    registerAmbientNode(baseGain);
+
+    let step = 0;
+    const sequence = () => {
+        if (!state.audio.isAmbientPlaying || state.audio.ambientSound !== 'zen') return;
+
+        const target = melodyScale[step % melodyScale.length];
+        melody.frequency.setValueAtTime(target, ctx.currentTime);
+        step += Math.random() > 0.6 ? 2 : 1;
+
+        setTimeout(sequence, 1800 + Math.random() * 1200);
+    };
+
+    sequence();
 }
 
 // =============================================
