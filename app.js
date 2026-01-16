@@ -32,7 +32,8 @@ const state = {
         bellSound: 'singing-bowl',
         ambientSound: 'silence',
         ambientNode: null,
-        isAmbientPlaying: false
+        isAmbientPlaying: false,
+        previewTimeout: null
     },
     settings: {
         intervalBell: 0, // minutes, 0 = off
@@ -323,10 +324,24 @@ function setupEventListeners() {
     DOM.ambientSound.addEventListener('change', (e) => {
         state.audio.ambientSound = e.target.value;
         localStorage.setItem('pulsedrift_ambient', e.target.value);
+        if (state.audio.previewTimeout) {
+            clearTimeout(state.audio.previewTimeout);
+            state.audio.previewTimeout = null;
+        }
         // Stop current ambient and start new one if timer is running
         stopAmbientSound();
-        if (state.timer.isRunning && e.target.value !== 'silence') {
-            startAmbientSound();
+        if (e.target.value !== 'silence') {
+            if (state.timer.isRunning) {
+                startAmbientSound();
+            } else {
+                startAmbientSound();
+                state.audio.previewTimeout = setTimeout(() => {
+                    if (!state.timer.isRunning) {
+                        stopAmbientSound();
+                    }
+                    state.audio.previewTimeout = null;
+                }, 4000);
+            }
         }
     });
     
@@ -484,6 +499,10 @@ function startTimer() {
     }
     
     initAudioContext();
+    if (state.audio.previewTimeout) {
+        clearTimeout(state.audio.previewTimeout);
+        state.audio.previewTimeout = null;
+    }
     
     state.timer.isRunning = true;
     state.timer.isPaused = false;
@@ -1965,3 +1984,60 @@ function hideIntentionDuringMeditation() {
     if (!DOM.intentionDisplay) return;
     DOM.intentionDisplay.classList.add('hidden');
 }
+
+// =============================================
+// Ambient Sound Diagnostics (Manual Test Helper)
+// =============================================
+
+async function runAmbientSoundTests() {
+    if (state.timer.isRunning) {
+        return {
+            ok: false,
+            message: 'Stop the timer before running ambient sound tests.'
+        };
+    }
+
+    initAudioContext();
+
+    const results = [];
+    const soundsToTest = ['rain', 'waves', 'forest', 'wind'];
+    const previousAmbient = state.audio.ambientSound;
+
+    if (state.audio.previewTimeout) {
+        clearTimeout(state.audio.previewTimeout);
+        state.audio.previewTimeout = null;
+    }
+
+    stopAmbientSound();
+
+    for (const sound of soundsToTest) {
+        state.audio.ambientSound = sound;
+        startAmbientSound();
+
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        const hasNode = Boolean(state.audio.ambientNode);
+        const isPlaying = state.audio.isAmbientPlaying === true;
+
+        results.push({
+            sound,
+            ok: hasNode && isPlaying,
+            details: {
+                hasNode,
+                isPlaying,
+                audioState: state.audio.context ? state.audio.context.state : 'no-context'
+            }
+        });
+
+        stopAmbientSound();
+    }
+
+    state.audio.ambientSound = previousAmbient;
+
+    return {
+        ok: results.every(result => result.ok),
+        results
+    };
+}
+
+window.runAmbientSoundTests = runAmbientSoundTests;
