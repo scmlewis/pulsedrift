@@ -238,30 +238,31 @@ function init() {
 }
 
 function loadSettings() {
-    const savedSettings = localStorage.getItem('pulsedrift_settings');
+    // Load settings with error handling
+    const savedSettings = safeGetItem(STORAGE_KEYS.SETTINGS, null);
     if (savedSettings) {
-        Object.assign(state.settings, JSON.parse(savedSettings));
+        Object.assign(state.settings, savedSettings);
     }
     
-    const savedVolume = localStorage.getItem('pulsedrift_volume');
+    const savedVolume = safeGetRawItem(STORAGE_KEYS.VOLUME, '');
     if (savedVolume) {
-        state.audio.volume = parseFloat(savedVolume);
+        state.audio.volume = parseFloat(savedVolume) || AUDIO_CONFIG.DEFAULT_VOLUME;
         DOM.volumeSlider.value = state.audio.volume * 100;
     }
     
-    const savedBellSound = localStorage.getItem('pulsedrift_bell');
+    const savedBellSound = safeGetRawItem(STORAGE_KEYS.BELL_SOUND, '');
     if (savedBellSound) {
         state.audio.bellSound = savedBellSound;
         DOM.bellSound.value = savedBellSound;
     }
     
-    const savedAmbientSound = localStorage.getItem('pulsedrift_ambient');
+    const savedAmbientSound = safeGetRawItem(STORAGE_KEYS.AMBIENT_SOUND, '');
     if (savedAmbientSound) {
         state.audio.ambientSound = savedAmbientSound;
         DOM.ambientSound.value = savedAmbientSound;
     }
     
-    const savedIntention = localStorage.getItem('pulsedrift_intention');
+    const savedIntention = safeGetRawItem(STORAGE_KEYS.INTENTION, '');
     if (savedIntention) {
         DOM.intentionInput.value = savedIntention;
     }
@@ -274,18 +275,18 @@ function loadSettings() {
 }
 
 function saveSettings() {
-    localStorage.setItem('pulsedrift_settings', JSON.stringify(state.settings));
+    safeSetItem(STORAGE_KEYS.SETTINGS, state.settings);
 }
 
 function loadSessions() {
-    const savedSessions = localStorage.getItem('pulsedrift_sessions');
-    if (savedSessions) {
-        state.sessions = JSON.parse(savedSessions);
+    const savedSessions = safeGetItem(STORAGE_KEYS.SESSIONS, []);
+    if (Array.isArray(savedSessions)) {
+        state.sessions = savedSessions;
     }
 }
 
 function saveSessions() {
-    localStorage.setItem('pulsedrift_sessions', JSON.stringify(state.sessions));
+    safeSetItem(STORAGE_KEYS.SESSIONS, state.sessions);
 }
 
 // =============================================
@@ -315,7 +316,7 @@ function setupEventListeners() {
     // Sound controls
     DOM.bellSound.addEventListener('change', (e) => {
         state.audio.bellSound = e.target.value;
-        localStorage.setItem('pulsedrift_bell', e.target.value);
+        safeSetRawItem(STORAGE_KEYS.BELL_SOUND, e.target.value);
         // Preview the sound
         if (e.target.value !== 'silence') {
             playBellSound(0.5);
@@ -324,7 +325,7 @@ function setupEventListeners() {
     
     DOM.ambientSound.addEventListener('change', (e) => {
         state.audio.ambientSound = e.target.value;
-        localStorage.setItem('pulsedrift_ambient', e.target.value);
+        safeSetRawItem(STORAGE_KEYS.AMBIENT_SOUND, e.target.value);
         if (state.audio.previewTimeout) {
             clearTimeout(state.audio.previewTimeout);
             state.audio.previewTimeout = null;
@@ -341,14 +342,14 @@ function setupEventListeners() {
                         stopAmbientSound();
                     }
                     state.audio.previewTimeout = null;
-                }, 4000);
+                }, UI_TIMING.AMBIENT_PREVIEW_DURATION);
             }
         }
     });
     
     DOM.volumeSlider.addEventListener('input', (e) => {
         state.audio.volume = e.target.value / 100;
-        localStorage.setItem('pulsedrift_volume', state.audio.volume);
+        safeSetRawItem(STORAGE_KEYS.VOLUME, state.audio.volume.toString());
         if (state.audio.masterGain) {
             state.audio.masterGain.gain.value = state.audio.volume;
         }
@@ -356,7 +357,7 @@ function setupEventListeners() {
     
     // Intention
     DOM.intentionInput.addEventListener('change', (e) => {
-        localStorage.setItem('pulsedrift_intention', e.target.value);
+        safeSetRawItem(STORAGE_KEYS.INTENTION, e.target.value);
     });
     
     DOM.intentionInput.addEventListener('input', (e) => {
@@ -1469,6 +1470,11 @@ function updateHistoryStats() {
     
     // Also update mini stats widget
     updateMiniStats();
+
+    // Refresh enhanced analytics if available
+    if (typeof window.refreshEnhancedStats === 'function') {
+        window.refreshEnhancedStats();
+    }
 }
 
 function calculateStreak() {
@@ -1726,8 +1732,9 @@ document.addEventListener('visibilitychange', () => {
 // Service Worker Registration (for PWA support)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        // Service worker would go here for offline support
-        // navigator.serviceWorker.register('/sw.js');
+        navigator.serviceWorker.register('sw.js').catch((error) => {
+            console.warn('Service worker registration failed:', error);
+        });
     });
 }
 
@@ -1737,7 +1744,7 @@ if ('serviceWorker' in navigator) {
 
 function initAccordions() {
     // Load accordion states from localStorage
-    const soundSettingsState = localStorage.getItem('accordion_soundSettings');
+    const soundSettingsState = safeGetRawItem(STORAGE_KEYS.ACCORDION_PREFIX + 'soundSettings', '');
     
     // Sound settings accordion starts collapsed by default
     if (soundSettingsState === 'open') {
@@ -1755,10 +1762,10 @@ function toggleAccordion(toggleId, contentId, storageKey) {
     
     if (isOpen) {
         closeAccordion(toggleId, contentId);
-        localStorage.setItem(`accordion_${storageKey}`, 'closed');
+        safeSetRawItem(STORAGE_KEYS.ACCORDION_PREFIX + storageKey, 'closed');
     } else {
         openAccordion(toggleId, contentId);
-        localStorage.setItem(`accordion_${storageKey}`, 'open');
+        safeSetRawItem(STORAGE_KEYS.ACCORDION_PREFIX + storageKey, 'open');
     }
 }
 
@@ -2180,4 +2187,7 @@ async function runAmbientSoundTests() {
     };
 }
 
+// Expose for testing and debugging
 window.runAmbientSoundTests = runAmbientSoundTests;
+window.state = state;
+window.DOM = DOM;

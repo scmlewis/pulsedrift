@@ -43,6 +43,15 @@ const enhancementDOM = {
     
     // Export Data
     exportDataBtn: document.getElementById('exportDataBtn'),
+    importDataBtn: document.getElementById('importDataBtn'),
+    importDataInput: document.getElementById('importDataInput'),
+
+    // Advanced Analytics
+    analyticsWeeklyMinutes: document.getElementById('analyticsWeeklyMinutes'),
+    analyticsAverageSession: document.getElementById('analyticsAverageSession'),
+    analyticsBestDay: document.getElementById('analyticsBestDay'),
+    analyticsWeekBars: document.getElementById('analyticsWeekBars'),
+    analyticsEmpty: document.getElementById('analyticsEmpty'),
     
     // Journal
     moodSelector: document.getElementById('moodSelector'),
@@ -110,15 +119,32 @@ function initSessionTemplates() {
             }
         });
     }
+    
+    // Event delegation for template list actions (replaces inline onclick handlers)
+    if (enhancementDOM.templatesList) {
+        enhancementDOM.templatesList.addEventListener('click', (e) => {
+            const target = e.target;
+            const action = target.dataset.action;
+            const templateId = target.dataset.templateId;
+            
+            if (!action || !templateId) return;
+            
+            if (action === 'load') {
+                loadTemplate(templateId);
+            } else if (action === 'delete') {
+                deleteTemplate(templateId);
+            }
+        });
+    }
 }
 
 function loadTemplates() {
-    const saved = localStorage.getItem('pulsedrift-templates');
-    enhancementState.templates = saved ? JSON.parse(saved) : [];
+    const saved = safeGetItem(STORAGE_KEYS.TEMPLATES, []);
+    enhancementState.templates = Array.isArray(saved) ? saved : [];
 }
 
 function saveTemplates() {
-    localStorage.setItem('pulsedrift-templates', JSON.stringify(enhancementState.templates));
+    safeSetItem(STORAGE_KEYS.TEMPLATES, enhancementState.templates);
 }
 
 function openSaveTemplateModal() {
@@ -226,16 +252,27 @@ function renderTemplates() {
         return `
             <div class="template-item" data-id="${template.id}">
                 <div class="template-info">
-                    <div class="template-name">${template.name}</div>
+                    <div class="template-name">${escapeHtml(template.name)}</div>
                     <div class="template-details">${minutes} min • ${template.bellSound} • ${template.ambientSound}</div>
                 </div>
                 <div class="template-actions-group">
-                    <button class="template-load-btn" onclick="loadTemplate('${template.id}')">Load</button>
-                    <button class="template-delete-btn" onclick="deleteTemplate('${template.id}')">Delete</button>
+                    <button class="template-load-btn" data-action="load" data-template-id="${template.id}">Load</button>
+                    <button class="template-delete-btn" data-action="delete" data-template-id="${template.id}">Delete</button>
                 </div>
             </div>
         `;
     }).join('');
+}
+
+/**
+ * Escape HTML to prevent XSS when displaying user input
+ * @param {string} text - User input text
+ * @returns {string} Escaped safe HTML
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function loadTemplate(templateId) {
@@ -303,6 +340,7 @@ function updatePresetButtons() {
 
 function initEnhancedStats() {
     renderCalendarHeatmap();
+    renderAdvancedAnalytics();
 }
 
 function renderCalendarHeatmap() {
@@ -315,7 +353,7 @@ function renderCalendarHeatmap() {
     // Create a map of dates to session counts/minutes
     const dateMap = {};
     sessions.forEach(session => {
-        const date = new Date(session.timestamp).toDateString();
+        const date = getSessionDate(session).toDateString();
         if (!dateMap[date]) {
             dateMap[date] = { count: 0, minutes: 0 };
         }
@@ -350,6 +388,94 @@ function renderCalendarHeatmap() {
     enhancementDOM.calendarHeatmap.innerHTML = html;
 }
 
+function renderAdvancedAnalytics() {
+    if (!enhancementDOM.analyticsWeekBars) return;
+
+    const sessions = state.sessions || [];
+    if (enhancementDOM.analyticsEmpty) {
+        enhancementDOM.analyticsEmpty.classList.toggle('hidden', sessions.length > 0);
+    }
+    if (sessions.length === 0) {
+        enhancementDOM.analyticsWeekBars.innerHTML = '';
+        if (enhancementDOM.analyticsWeeklyMinutes) enhancementDOM.analyticsWeeklyMinutes.textContent = '0';
+        if (enhancementDOM.analyticsAverageSession) enhancementDOM.analyticsAverageSession.textContent = '0';
+        if (enhancementDOM.analyticsBestDay) enhancementDOM.analyticsBestDay.textContent = '—';
+        return;
+    }
+    const today = new Date();
+    const days = 7;
+    const dailyMinutes = Array.from({ length: days }, () => 0);
+    const dailySessions = Array.from({ length: days }, () => 0);
+
+    for (let i = 0; i < days; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - (days - 1 - i));
+        date.setHours(0, 0, 0, 0);
+        const dateKey = date.toDateString();
+
+        sessions.forEach(session => {
+            const sessionDate = getSessionDate(session);
+            sessionDate.setHours(0, 0, 0, 0);
+            if (sessionDate.toDateString() === dateKey) {
+                dailyMinutes[i] += Math.floor(session.duration / 60);
+                dailySessions[i] += 1;
+            }
+        });
+    }
+
+    const totalWeekMinutes = dailyMinutes.reduce((sum, minutes) => sum + minutes, 0);
+    const totalSessionMinutes = Math.floor(
+        sessions.reduce((sum, session) => sum + (session.duration || 0), 0) / 60
+    );
+    const totalSessions = sessions.length;
+    const averageSession = totalSessions > 0 ? Math.round(totalSessionMinutes / totalSessions) : 0;
+
+    let bestDayIndex = -1;
+    let bestDayMinutes = 0;
+    dailyMinutes.forEach((minutes, index) => {
+        if (minutes > bestDayMinutes) {
+            bestDayMinutes = minutes;
+            bestDayIndex = index;
+        }
+    });
+
+    const bestDayLabel = bestDayIndex >= 0
+        ? new Date(today.getFullYear(), today.getMonth(), today.getDate() - (days - 1 - bestDayIndex))
+            .toLocaleDateString('en-US', { weekday: 'short' })
+        : '—';
+
+    if (enhancementDOM.analyticsWeeklyMinutes) {
+        enhancementDOM.analyticsWeeklyMinutes.textContent = totalWeekMinutes.toString();
+    }
+    if (enhancementDOM.analyticsAverageSession) {
+        enhancementDOM.analyticsAverageSession.textContent = averageSession.toString();
+    }
+    if (enhancementDOM.analyticsBestDay) {
+        enhancementDOM.analyticsBestDay.textContent = bestDayLabel;
+    }
+
+    const maxMinutes = Math.max(10, ...dailyMinutes);
+    const barsHtml = dailyMinutes.map((minutes, index) => {
+        const height = Math.max(6, Math.round((minutes / maxMinutes) * 90));
+        const dayLabel = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (days - 1 - index))
+            .toLocaleDateString('en-US', { weekday: 'short' });
+        return `
+            <div class="analytics-bar" title="${dayLabel}: ${minutes} min">
+                <div class="analytics-bar-fill" style="height: ${height}px;"></div>
+                <div class="analytics-bar-value">${minutes}</div>
+                <div class="analytics-bar-label">${dayLabel}</div>
+            </div>
+        `;
+    }).join('');
+
+    enhancementDOM.analyticsWeekBars.innerHTML = barsHtml;
+}
+
+function refreshEnhancedStats() {
+    renderCalendarHeatmap();
+    renderAdvancedAnalytics();
+}
+
 // =============================================
 // Feature #7: Export Data
 // =============================================
@@ -358,6 +484,133 @@ function initExportData() {
     if (enhancementDOM.exportDataBtn) {
         enhancementDOM.exportDataBtn.addEventListener('click', exportSessionData);
     }
+}
+
+function initImportData() {
+    if (!enhancementDOM.importDataBtn || !enhancementDOM.importDataInput) return;
+
+    enhancementDOM.importDataBtn.addEventListener('click', () => {
+        enhancementDOM.importDataInput.value = '';
+        enhancementDOM.importDataInput.click();
+    });
+
+    enhancementDOM.importDataInput.addEventListener('change', async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            importSessionData(data);
+        } catch (error) {
+            if (typeof toast !== 'undefined') {
+                toast.show('Invalid import file. Please select a valid PulseDrift export.', 'error');
+            }
+        }
+    });
+}
+
+function importSessionData(data) {
+    if (!data || typeof data !== 'object') {
+        if (typeof toast !== 'undefined') {
+            toast.show('Import failed: invalid data format.', 'error');
+        }
+        return;
+    }
+
+    const shouldMerge = confirm('Merge imported data with existing data? Click Cancel to replace.');
+
+    const importedSessions = Array.isArray(data.sessions)
+        ? data.sessions.map(normalizeSession).filter(Boolean)
+        : [];
+    const importedTemplates = Array.isArray(data.templates) ? data.templates : [];
+    const importedJournal = Array.isArray(data.journal) ? data.journal : [];
+    const importedAchievements = Array.isArray(data.achievements) ? data.achievements : [];
+    const importedSettings = data.settings || null;
+
+    if (shouldMerge) {
+        state.sessions = mergeSessions(state.sessions || [], importedSessions);
+        enhancementState.templates = mergeById(enhancementState.templates || [], importedTemplates, 'id');
+        enhancementState.journal = mergeById(enhancementState.journal || [], importedJournal, 'id');
+        enhancementState.achievements = mergeUniqueValues(enhancementState.achievements || [], importedAchievements);
+    } else {
+        state.sessions = importedSessions;
+        enhancementState.templates = importedTemplates;
+        enhancementState.journal = importedJournal;
+        enhancementState.achievements = importedAchievements;
+    }
+
+    saveSessions();
+    updateHistoryStats();
+    renderHistory();
+
+    saveTemplates();
+    renderTemplates();
+
+    safeSetItem(STORAGE_KEYS.JOURNAL, enhancementState.journal);
+    safeSetItem(STORAGE_KEYS.ACHIEVEMENTS, enhancementState.achievements);
+
+    if (importedSettings && typeof importedSettings === 'object') {
+        Object.assign(state.settings, importedSettings);
+        if (typeof saveSettings !== 'undefined') {
+            saveSettings();
+        }
+        if (DOM.intervalBell) DOM.intervalBell.value = state.settings.intervalBell;
+        if (DOM.breathingPattern) DOM.breathingPattern.value = state.settings.breathingPattern;
+        if (DOM.notificationsToggle) DOM.notificationsToggle.checked = !!state.settings.notifications;
+        if (DOM.autoBreathingToggle) DOM.autoBreathingToggle.checked = !!state.settings.autoBreathing;
+    }
+
+    refreshEnhancedStats();
+
+    if (typeof toast !== 'undefined') {
+        toast.show('Data imported successfully!', 'success');
+    }
+}
+
+function normalizeSession(session) {
+    if (!session || typeof session !== 'object') return null;
+    const normalized = {
+        id: session.id || Date.now() + Math.random(),
+        date: session.date || session.timestamp || new Date().toISOString(),
+        duration: session.duration || 0,
+        completed: typeof session.completed === 'boolean' ? session.completed : true,
+        intention: session.intention || null
+    };
+    return normalized;
+}
+
+function mergeSessions(existing, imported) {
+    const all = [...existing, ...imported].filter(Boolean);
+    const uniqueMap = new Map();
+    all.forEach(session => {
+        const key = `${session.id}-${session.date}`;
+        if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, session);
+        }
+    });
+    return Array.from(uniqueMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+function mergeById(existing, incoming, idKey) {
+    const map = new Map();
+    [...existing, ...incoming].forEach(item => {
+        if (!item || typeof item !== 'object') return;
+        const key = item[idKey] || JSON.stringify(item);
+        if (!map.has(key)) {
+            map.set(key, item);
+        }
+    });
+    return Array.from(map.values());
+}
+
+function mergeUniqueValues(existing, incoming) {
+    return Array.from(new Set([...(existing || []), ...(incoming || [])]));
+}
+
+function getSessionDate(session) {
+    const dateValue = session?.date || session?.timestamp || session?.createdAt || session?.time;
+    return dateValue ? new Date(dateValue) : new Date();
 }
 
 function exportSessionData() {
@@ -396,14 +649,15 @@ function initJournal() {
     // Mood selector
     if (enhancementDOM.moodSelector) {
         enhancementDOM.moodSelector.addEventListener('click', (e) => {
-            if (e.target.classList.contains('mood-btn')) {
+            const button = e.target.closest('.mood-btn');
+            if (button) {
                 // Remove selected from all
                 document.querySelectorAll('.mood-btn').forEach(btn => {
                     btn.classList.remove('selected');
                 });
                 // Add selected to clicked
-                e.target.classList.add('selected');
-                enhancementState.currentMood = e.target.getAttribute('data-mood');
+                button.classList.add('selected');
+                enhancementState.currentMood = button.getAttribute('data-mood');
             }
         });
     }
@@ -435,13 +689,13 @@ function saveJournalEntry(sessionData) {
         };
         
         enhancementState.journal.push(entry);
-        localStorage.setItem('pulsedrift-journal', JSON.stringify(enhancementState.journal));
+        safeSetItem(STORAGE_KEYS.JOURNAL, enhancementState.journal);
     }
     
     // Reset journal inputs
     enhancementState.currentMood = null;
     if (enhancementDOM.journalNotes) enhancementDOM.journalNotes.value = '';
-    if (enhancementDOM.journalCharCounter) enhancementDOM.journalCharCounter.textContent = '0/500';
+    if (enhancementDOM.journalCharCounter) enhancementDOM.journalCharCounter.textContent = '0/' + INPUT_LIMITS.JOURNAL_MAX_CHARS;
     document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('selected'));
 }
 
@@ -450,33 +704,49 @@ function saveJournalEntry(sessionData) {
 // =============================================
 
 const achievementsList = [
-    { id: 'first_session', title: 'First Step', desc: 'Complete your first meditation', icon: '🌱', checkFn: (stats) => stats.totalSessions >= 1 },
-    { id: 'sessions_10', title: 'Building Habit', desc: 'Complete 10 meditation sessions', icon: '🌿', checkFn: (stats) => stats.totalSessions >= 10 },
-    { id: 'sessions_50', title: 'Dedicated Practice', desc: 'Complete 50 meditation sessions', icon: '🌳', checkFn: (stats) => stats.totalSessions >= 50 },
-    { id: 'sessions_100', title: 'Century Club', desc: 'Complete 100 meditation sessions', icon: '🏆', checkFn: (stats) => stats.totalSessions >= 100 },
-    { id: 'minutes_60', title: 'One Hour', desc: 'Meditate for 60 minutes total', icon: '⏰', checkFn: (stats) => stats.totalMinutes >= 60 },
-    { id: 'minutes_300', title: 'Five Hours', desc: 'Meditate for 5 hours total', icon: '⏱️', checkFn: (stats) => stats.totalMinutes >= 300 },
-    { id: 'minutes_600', title: 'Ten Hours', desc: 'Meditate for 10 hours total', icon: '🕐', checkFn: (stats) => stats.totalMinutes >= 600 },
-    { id: 'streak_3', title: 'Momentum', desc: '3-day meditation streak', icon: '🔥', checkFn: (stats) => stats.currentStreak >= 3 },
-    { id: 'streak_7', title: 'Week Warrior', desc: '7-day meditation streak', icon: '💪', checkFn: (stats) => stats.currentStreak >= 7 },
-    { id: 'streak_30', title: 'Month Master', desc: '30-day meditation streak', icon: '🌟', checkFn: (stats) => stats.currentStreak >= 30 },
-    { id: 'long_session', title: 'Deep Dive', desc: 'Complete a 30-minute session', icon: '🧘', checkFn: (stats, lastSession) => lastSession && lastSession.duration >= 1800 },
-    { id: 'early_bird', title: 'Early Bird', desc: 'Meditate before 7 AM', icon: '🌅', checkFn: (stats, lastSession) => {
+    { id: 'first_session', title: 'First Step', desc: 'Complete your first meditation', icon: 'seedling', checkFn: (stats) => stats.totalSessions >= 1 },
+    { id: 'sessions_10', title: 'Building Habit', desc: 'Complete 10 meditation sessions', icon: 'leaf', checkFn: (stats) => stats.totalSessions >= 10 },
+    { id: 'sessions_50', title: 'Dedicated Practice', desc: 'Complete 50 meditation sessions', icon: 'tree', checkFn: (stats) => stats.totalSessions >= 50 },
+    { id: 'sessions_100', title: 'Century Club', desc: 'Complete 100 meditation sessions', icon: 'trophy', checkFn: (stats) => stats.totalSessions >= 100 },
+    { id: 'minutes_60', title: 'One Hour', desc: 'Meditate for 60 minutes total', icon: 'clock', checkFn: (stats) => stats.totalMinutes >= 60 },
+    { id: 'minutes_300', title: 'Five Hours', desc: 'Meditate for 5 hours total', icon: 'timer', checkFn: (stats) => stats.totalMinutes >= 300 },
+    { id: 'minutes_600', title: 'Ten Hours', desc: 'Meditate for 10 hours total', icon: 'time', checkFn: (stats) => stats.totalMinutes >= 600 },
+    { id: 'streak_3', title: 'Momentum', desc: '3-day meditation streak', icon: 'flame', checkFn: (stats) => stats.currentStreak >= 3 },
+    { id: 'streak_7', title: 'Week Warrior', desc: '7-day meditation streak', icon: 'strength', checkFn: (stats) => stats.currentStreak >= 7 },
+    { id: 'streak_30', title: 'Month Master', desc: '30-day meditation streak', icon: 'star', checkFn: (stats) => stats.currentStreak >= 30 },
+    { id: 'long_session', title: 'Deep Dive', desc: 'Complete a 30-minute session', icon: 'lotus', checkFn: (stats, lastSession) => lastSession && lastSession.duration >= 1800 },
+    { id: 'early_bird', title: 'Early Bird', desc: 'Meditate before 7 AM', icon: 'sunrise', checkFn: (stats, lastSession) => {
         if (!lastSession) return false;
         const hour = new Date(lastSession.timestamp).getHours();
         return hour < 7;
     }},
-    { id: 'night_owl', title: 'Night Owl', desc: 'Meditate after 10 PM', icon: '🌙', checkFn: (stats, lastSession) => {
+    { id: 'night_owl', title: 'Night Owl', desc: 'Meditate after 10 PM', icon: 'moon', checkFn: (stats, lastSession) => {
         if (!lastSession) return false;
         const hour = new Date(lastSession.timestamp).getHours();
         return hour >= 22;
     }}
 ];
 
+const achievementIcons = {
+    seedling: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20v-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 14c-3 0-5-2.2-5-5 3 0 5 2.2 5 5Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 14c3 0 5-2.2 5-5-3 0-5 2.2-5 5Z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    leaf: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19c8-1 13-6 14-14-8 1-13 6-14 14Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 15c2-1 4-2 7-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    tree: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3 2 5 5 5 8H7c0-3 2-6 5-8Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 11h12l-2 4H8l-2-4Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 15v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    trophy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 5H3v2a4 4 0 0 0 4 4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M19 5h2v2a4 4 0 0 1-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 18h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M10 18v2h4v-2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v4l3 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    timer: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 3h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 13l3-2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    time: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 9v4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 13h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3 3 4 5 4 8a4 4 0 1 1-8 0c0-2 1-4 4-8Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 12c1 1 2 2 2 3a2 2 0 1 1-4 0c0-1 1-2 2-3Z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    strength: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5 8v8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M19 8v8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M9 8v8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M15 8v8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    lotus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c2 2 3 4 3 6-2-1-3-3-3-6Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 4c-2 2-3 4-3 6 2-1 3-3 3-6Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 12c2 0 4 1 6 3 2-2 4-3 6-3-2 3-4 5-6 5s-4-2-6-5Z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    sunrise: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6 18a6 6 0 1 1 12 0" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5 10l2 1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M19 10l-2 1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    moon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4a7 7 0 1 0 5 12 8 8 0 1 1-5-12Z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>'
+};
+
 function initAchievements() {
-    // Load saved achievements
-    const saved = localStorage.getItem('pulsedrift-achievements');
-    enhancementState.achievements = saved ? JSON.parse(saved) : [];
+    // Load saved achievements with error handling
+    const saved = safeGetItem(STORAGE_KEYS.ACHIEVEMENTS, []);
+    enhancementState.achievements = Array.isArray(saved) ? saved : [];
 }
 
 function checkAchievements(sessionData) {
@@ -501,7 +771,7 @@ function checkAchievements(sessionData) {
     
     // Save achievements
     if (newAchievements.length > 0) {
-        localStorage.setItem('pulsedrift-achievements', JSON.stringify(enhancementState.achievements));
+        safeSetItem(STORAGE_KEYS.ACHIEVEMENTS, enhancementState.achievements);
         
         // Show the first new achievement
         showAchievement(newAchievements[0]);
@@ -512,7 +782,8 @@ function showAchievement(achievement) {
     if (!enhancementDOM.achievementBadge) return;
     
     if (enhancementDOM.achievementIcon) {
-        enhancementDOM.achievementIcon.textContent = achievement.icon;
+        const iconSvg = achievementIcons[achievement.icon] || achievementIcons.star;
+        enhancementDOM.achievementIcon.innerHTML = iconSvg;
     }
     if (enhancementDOM.achievementTitle) {
         enhancementDOM.achievementTitle.textContent = achievement.title;
@@ -670,7 +941,7 @@ function enhanceCompleteHandler() {
         }
         
         // Update heatmap
-        renderCalendarHeatmap();
+        refreshEnhancedStats();
     });
 }
 
@@ -679,33 +950,31 @@ function enhanceCompleteHandler() {
 // =============================================
 
 function initEnhancements() {
-    console.log('🚀 Initializing PulseDrift Enhancements...');
-    
     initFocusModeExit();
     initSessionTemplates();
     initEnhancedStats();
     initExportData();
+    initImportData();
     initJournal();
     initAchievements();
     initAutoFocusInput();
     
     // Enhance complete handler
-    setTimeout(enhanceCompleteHandler, 1000);
-    
-    console.log('✅ Enhancements initialized!');
+    setTimeout(enhanceCompleteHandler, UI_TIMING.COMPLETE_HANDLER_DELAY);
 }
 
 // Wait for DOM and existing app.js to load
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(initEnhancements, 500);
+        setTimeout(initEnhancements, UI_TIMING.ENHANCEMENT_INIT_DELAY);
     });
 } else {
-    setTimeout(initEnhancements, 500);
+    setTimeout(initEnhancements, UI_TIMING.ENHANCEMENT_INIT_DELAY);
 }
 
-// Make functions globally available
-window.loadTemplate = loadTemplate;
-window.deleteTemplate = deleteTemplate;
+// Make functions globally available (only those needed externally)
 window.fadeInAmbientSound = fadeInAmbientSound;
 window.playMilestoneCompletionSound = playMilestoneCompletionSound;
+window.refreshEnhancedStats = refreshEnhancedStats;
+window.enhancementState = enhancementState;
+window.enhancementDOM = enhancementDOM;

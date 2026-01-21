@@ -1,0 +1,13 @@
+{
+  "name": "pulsedrift-timer",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "jest --config dev/jest.config.js"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^24.0.0"
+  }
+}

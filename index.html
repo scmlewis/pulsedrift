@@ -6,6 +6,9 @@
     <meta name="theme-color" content="#1a1a2e">
     <meta name="description" content="PulseDrift - A zen meditation timer with breathing exercises and mindfulness features">
     <title>PulseDrift - Zen Meditation Timer</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -72,7 +75,12 @@
                             <span class="mini-stat-label">min today</span>
                         </div>
                         <div class="mini-stat">
-                            <span class="mini-stat-icon">🔥</span>
+                            <span class="mini-stat-icon" aria-hidden="true">
+                                <svg class="mini-stat-icon-svg" viewBox="0 0 24 24">
+                                    <path d="M12 3c3 3 4 5 4 8a4 4 0 1 1-8 0c0-2 1-4 4-8Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                                    <path d="M12 12c1 1 2 2 2 3a2 2 0 1 1-4 0c0-1 1-2 2-3Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                                </svg>
+                            </span>
                             <span class="mini-stat-value" id="miniStatStreak">0</span>
                         </div>
                     </div>
@@ -277,16 +285,56 @@
                 <span class="legend-label">More</span>
             </div>
         </div>
+
+        <!-- Advanced Analytics -->
+        <div class="analytics-section" id="analyticsSection">
+            <h3 class="analytics-title">Weekly Insights</h3>
+            <p class="analytics-empty hidden" id="analyticsEmpty">No sessions yet. Complete a session to see insights.</p>
+            <div class="analytics-summary">
+                <div class="analytics-card">
+                    <span class="analytics-label">Last 7 Days</span>
+                    <span class="analytics-value" id="analyticsWeeklyMinutes">0</span>
+                    <span class="analytics-subtext">minutes</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Avg Session</span>
+                    <span class="analytics-value" id="analyticsAverageSession">0</span>
+                    <span class="analytics-subtext">minutes</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Best Day</span>
+                    <span class="analytics-value" id="analyticsBestDay">—</span>
+                    <span class="analytics-subtext">this week</span>
+                </div>
+            </div>
+            <div class="analytics-weekly" id="analyticsWeekly">
+                <div class="analytics-bars" id="analyticsWeekBars">
+                    <!-- Bars injected via JS -->
+                </div>
+            </div>
+        </div>
         
-        <!-- Export Data Button -->
-        <button class="export-data-btn" id="exportDataBtn">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Export Data
-        </button>
+        <!-- Import/Export Data -->
+        <div class="data-actions">
+            <button class="export-data-btn" id="exportDataBtn">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export Data
+            </button>
+            <button class="import-data-btn" id="importDataBtn">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 14 12 9 7 14"/>
+                    <line x1="12" y1="9" x2="12" y2="21"/>
+                </svg>
+                Import Data
+            </button>
+            <input type="file" id="importDataInput" class="hidden" accept="application/json">
+        </div>
+        <p class="data-help">Import will prompt to merge with existing data or replace it.</p>
         
         <div class="history-list" id="historyList">
             <!-- Sessions will be populated here -->
@@ -507,7 +555,7 @@
             
             <!-- Achievement Badge (if milestone reached) -->
             <div class="achievement-badge hidden" id="achievementBadge">
-                <div class="achievement-icon" id="achievementIcon">🏆</div>
+                <div class="achievement-icon" id="achievementIcon"></div>
                 <div class="achievement-text">
                     <div class="achievement-title" id="achievementTitle">Achievement Unlocked!</div>
                     <div class="achievement-desc" id="achievementDesc">10 sessions completed</div>
@@ -518,10 +566,38 @@
             <div class="journal-section">
                 <label class="journal-label">How was your session?</label>
                 <div class="mood-selector" id="moodSelector">
-                    <button class="mood-btn" data-mood="peaceful" title="Peaceful">😌</button>
-                    <button class="mood-btn" data-mood="focused" title="Focused">😊</button>
-                    <button class="mood-btn" data-mood="neutral" title="Neutral">😐</button>
-                    <button class="mood-btn" data-mood="restless" title="Restless">😓</button>
+                    <button class="mood-btn" data-mood="peaceful" title="Peaceful" aria-label="Peaceful">
+                        <svg class="mood-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                            <circle cx="9" cy="10" r="1" fill="currentColor"/>
+                            <circle cx="15" cy="10" r="1" fill="currentColor"/>
+                            <path d="M8 15c1.2 1 2.6 1.5 4 1.5s2.8-.5 4-1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button class="mood-btn" data-mood="focused" title="Focused" aria-label="Focused">
+                        <svg class="mood-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                            <circle cx="9" cy="10" r="1" fill="currentColor"/>
+                            <circle cx="15" cy="10" r="1" fill="currentColor"/>
+                            <path d="M9 16h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button class="mood-btn" data-mood="neutral" title="Neutral" aria-label="Neutral">
+                        <svg class="mood-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                            <circle cx="9" cy="10" r="1" fill="currentColor"/>
+                            <circle cx="15" cy="10" r="1" fill="currentColor"/>
+                            <path d="M8 15h8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button class="mood-btn" data-mood="restless" title="Restless" aria-label="Restless">
+                        <svg class="mood-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                            <circle cx="9" cy="10" r="1" fill="currentColor"/>
+                            <circle cx="15" cy="10" r="1" fill="currentColor"/>
+                            <path d="M8.5 16c1.2-.8 2.4-1.2 3.5-1.2s2.3.4 3.5 1.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </button>
                 </div>
                 <textarea 
                     id="journalNotes" 
@@ -543,6 +619,7 @@
     <!-- Particle Canvas for Organic Blobs (NEW) -->
     <canvas class="particle-canvas" id="particleCanvas"></canvas>
 
+    <script src="constants.js"></script>
     <script src="app.js"></script>
     <script src="enhancements.js"></script>
 </body>

@@ -40,6 +40,7 @@ A beautiful, zen-styled meditation timer with breathing exercises, ambient sound
 - **Personal Intentions**: Set daily meditation intentions
 - **Focus Mode**: Distraction-free environment (press `F` or click icon)
 - **Completion Celebration**: Beautiful overlay with motivational message
+- **Data Import/Export**: Backup and restore your PulseDrift data
 
 ### Design
 - **Dark Theme Default**: Easy on the eyes with light mode option
@@ -140,11 +141,20 @@ vercel deploy
 ## File Structure
 
 ```
-PulseDrift timer/
+PulseDrift/
 ├── index.html          # Main HTML structure
 ├── styles.css          # All styling & animations
-├── app.js              # Application logic
-└── README.md           # Documentation
+├── constants.js        # Configuration constants & safe storage utilities
+├── app.js              # Core timer logic & state management
+├── enhancements.js     # Templates, journal, achievements, analytics
+├── manifest.json       # PWA manifest
+├── sw.js               # Service worker for offline support
+├── icons/              # App icons for PWA
+├── README.md           # Documentation
+└── dev/                # Development files (git-ignored)
+    ├── jest.config.js  # Test configuration
+    ├── tests/          # Integration tests
+    └── prompts/        # Copilot prompts
 ```
 
 ## Features Breakdown
@@ -156,6 +166,9 @@ PulseDrift timer/
 - `pulsedrift_bell` - Selected bell sound
 - `pulsedrift_ambient` - Selected ambient sound
 - `pulsedrift_intention` - Current intention
+- `pulsedrift_templates` - Session templates
+- `pulsedrift_achievements` - Unlocked achievements
+- `pulsedrift_journal` - Journal entries
 
 ### Session History
 - Total sessions count
@@ -201,15 +214,10 @@ Add custom patterns in `app.js`:
 ```
 
 ## Progressive Web App (PWA)
-Ready for PWA conversion:
-- Manifest.json structure in place
-- Service worker hooks ready
-- Offline-capable architecture
-
-To enable PWA:
-1. Create `manifest.json` with app details
-2. Add service worker in `app.js` (commented out)
-3. Add icons in various sizes
+PulseDrift now ships with PWA support out of the box:
+- `manifest.json` included
+- `sw.js` enabled for offline caching
+- App icons in `icons/`
 
 ## Performance
 
@@ -218,6 +226,27 @@ To enable PWA:
 - **Fast load**: < 1s on 3G connection
 - **Smooth animations**: CSS transforms & GPU acceleration
 - **Efficient audio**: Real-time synthesis vs audio files
+
+## Development
+
+### Running Tests
+```bash
+npm install          # Install dev dependencies (Jest)
+npm test             # Run integration tests
+```
+
+### Test Coverage
+- Timer lifecycle (start, pause, resume, reset)
+- localStorage persistence & error handling
+- Template operations with XSS prevention
+- Achievement system
+- Constants validation
+
+### Code Quality
+- Error-safe localStorage wrappers (`safeGetItem`, `safeSetItem`)
+- Event delegation for dynamic content
+- XSS prevention with HTML escaping
+- Centralized constants for maintainability
 
 ## License
 

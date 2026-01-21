@@ -1855,7 +1855,15 @@ body {
 }
 
 .mini-stat-icon {
-    font-size: var(--font-size-lg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-warm);
+}
+
+.mini-stat-icon-svg {
+    width: 20px;
+    height: 20px;
 }
 
 .mini-stats-expand {
@@ -2665,7 +2673,7 @@ body {
 }
 
 .heatmap-day:hover {
-    transform: scale(1.3);
+    transform: scale(1.12);
     border-color: var(--accent-primary);
 }
 
@@ -2728,10 +2736,120 @@ body {
     background: var(--accent-zen);
 }
 
-/* Export Data Button */
-.export-data-btn {
-    width: calc(100% - var(--space-lg) * 2);
+/* Advanced Analytics */
+.analytics-section {
+    padding: var(--space-lg);
+    margin: var(--space-md) 0;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+}
+
+.analytics-title {
+    font-size: var(--font-size-md);
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+}
+
+.analytics-empty {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    margin-bottom: var(--space-md);
+}
+
+.analytics-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.analytics-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.analytics-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.analytics-value {
+    font-size: var(--font-size-lg);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.analytics-subtext {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+.analytics-weekly {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    padding: var(--space-md);
+}
+
+.analytics-bars {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    align-items: end;
+    gap: var(--space-sm);
+    min-height: 120px;
+}
+
+.analytics-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.analytics-bar-fill {
+    width: 100%;
+    min-height: 6px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(180deg, rgba(126, 231, 135, 0.9) 0%, rgba(88, 166, 255, 0.8) 100%);
+    box-shadow: var(--shadow-sm);
+}
+
+.analytics-bar-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.analytics-bar-value {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+/* Import/Export Buttons */
+.data-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-md);
     margin: var(--space-md) var(--space-lg);
+}
+
+.data-help {
+    margin: 0 var(--space-lg) var(--space-md);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.export-data-btn,
+.import-data-btn {
+    width: 100%;
     padding: var(--space-md);
     background: transparent;
     border: 1px solid var(--border-color);
@@ -2748,7 +2866,8 @@ body {
     gap: var(--space-sm);
 }
 
-.export-data-btn:hover {
+.export-data-btn:hover,
+.import-data-btn:hover {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
     background: var(--zen-water);
@@ -2793,9 +2912,25 @@ body {
     justify-content: center;
 }
 
+.mood-icon {
+    width: 26px;
+    height: 26px;
+    color: var(--text-primary);
+}
+
 .mood-btn:hover {
     transform: scale(1.1);
     border-color: var(--accent-primary);
+}
+
+/* Focus Visible States */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
 }
 
 .mood-btn.selected {
@@ -2861,8 +2996,18 @@ body {
 }
 
 .achievement-icon {
-    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-zen);
     animation: achievement-bounce 1s ease-in-out infinite;
+}
+
+.achievement-icon svg {
+    width: 40px;
+    height: 40px;
 }
 
 @keyframes achievement-bounce {

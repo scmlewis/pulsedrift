@@ -1,0 +1,24 @@
+{
+  "name": "PulseDrift - Zen Meditation Timer",
+  "short_name": "PulseDrift",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#1a1a2e",
+  "description": "A zen meditation timer with breathing exercises and mindfulness features.",
+  "icons": [
+    {
+      "src": "icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
