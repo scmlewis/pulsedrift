@@ -15,7 +15,8 @@ const state = {
         isPaused: false,
         intervalId: null,
         startTime: null,
-        originalDuration: 600
+        originalDuration: 600,
+        mantraIntervalId: null
     },
     breathing: {
         isActive: false,
@@ -133,6 +134,7 @@ const DOM = {
     completeOverlay: document.getElementById('completeOverlay'),
     completeDuration: document.getElementById('completeDuration'),
     completeMessage: document.getElementById('completeMessage'),
+    reflectionPrompt: document.getElementById('reflectionPrompt'),
     completeBtn: document.getElementById('completeBtn'),
     
     // Ripples
@@ -232,6 +234,9 @@ function init() {
     
     // Initialize new features
     initAccordions();
+    if (typeof initGuidedFeatures === 'function') {
+        initGuidedFeatures();
+    }
     updateMiniStats();
     initParticleSystem();
     updateCharCounter();
@@ -513,9 +518,19 @@ function startTimer() {
     // Play start bell
     playBellSound();
     
-    // Start ambient sound
+    // Start ambient sound with fade-in
     if (state.audio.ambientSound !== 'silence') {
         startAmbientSound();
+        if (typeof fadeInAmbientSound === 'function') {
+            fadeInAmbientSound(UI_TIMING.AMBIENT_FADE_IN);
+        }
+    }
+    
+    // Start mantra reminders if enabled
+    if (typeof guidedState !== 'undefined' && (guidedState.breathingGuidanceEnabled || guidedState.mantraText)) {
+        if (typeof startMantraReminders === 'function') {
+            startMantraReminders();
+        }
     }
     
     // Start breathing guide if auto-start is enabled
@@ -562,7 +577,12 @@ function pauseTimer() {
         state.timer.intervalId = null;
     }
     
-    stopAmbientSound();
+    if (typeof fadeOutAmbientSound === 'function') {
+        fadeOutAmbientSound(UI_TIMING.AMBIENT_FADE_OUT);
+    }
+    if (typeof stopMantraReminders === 'function') {
+        stopMantraReminders();
+    }
     stopInlineBreathing();
     hideIntentionDuringMeditation();
     updateTimerUI();
@@ -584,11 +604,21 @@ function completeTimer() {
     // Play completion bell
     playBellSound(1, true);
     
-    // Stop breathing
+    // Stop breathing and mantra
     stopInlineBreathing();
+    if (typeof stopMantraReminders === 'function') {
+        stopMantraReminders();
+    }
     
     // Hide intention display
     hideIntentionDuringMeditation();
+    
+    // Play guided completion sequence asynchronously
+    if (typeof guidedState !== 'undefined' && guidedState.breathingGuidanceEnabled) {
+        if (typeof playSessionCompletionGuidance === 'function') {
+            playSessionCompletionGuidance().catch(e => console.log('Completion guidance error:', e));
+        }
+    }
     
     // Get current intention
     const intention = DOM.intentionInput.value.trim();
@@ -606,7 +636,10 @@ function completeTimer() {
     updateHistoryStats();
     renderHistory();
     
-    // Show completion overlay with intention
+    // Show reflection prompt and completion overlay
+    if (typeof showSessionReflectionPrompt === 'function') {
+        showSessionReflectionPrompt(session);
+    }
     showCompletionOverlay(intention);
     
     // Send notification
@@ -1267,6 +1300,13 @@ function createZenMusic(ctx) {
 function openBreathingModal() {
     DOM.breathingModal.classList.remove('hidden');
     state.breathing.pattern = DOM.breathingPatternSelect.value;
+    
+    // Optionally play breathing intro guidance
+    if (typeof guidedState !== 'undefined' && guidedState.breathingGuidanceEnabled) {
+        if (typeof playBreathingIntro === 'function') {
+            playBreathingIntro().catch(e => console.log('Intro guidance error:', e));
+        }
+    }
 }
 
 function closeBreathingModal() {
@@ -1319,6 +1359,16 @@ function runBreathingCycle() {
         // Update UI
         DOM.breathCircleLarge.className = `breath-circle-large ${phase.name}`;
         DOM.breathInstruction.textContent = phase.label;
+        
+        // Update visual breathing with phase sync
+        if (typeof updateBreathingVisualsWithPhase === 'function') {
+            updateBreathingVisualsWithPhase(phase.name, 0.5);
+        }
+        
+        // Play guided phase cue
+        if (typeof playBreathingPhaseGuidance === 'function') {
+            playBreathingPhaseGuidance(state.breathing.pattern, phase.name).catch(e => console.log('Guidance error:', e));
+        }
         
         // Countdown
         let count = phase.duration;

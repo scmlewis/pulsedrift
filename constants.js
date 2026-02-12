@@ -46,7 +46,9 @@ const UI_TIMING = {
     AMBIENT_PREVIEW_DURATION: 4000, // Preview ambient sound duration
     TOAST_DURATION: 3000,         // Toast notification display time
     RIPPLE_INTERVAL: 3000,        // Background ripple animation interval
-    BREATHING_MODAL_CLOSE_DELAY: 500 // Delay when closing breathing modal
+    BREATHING_MODAL_CLOSE_DELAY: 500, // Delay when closing breathing modal
+    AMBIENT_FADE_IN: 2000,        // Ambient sound fade in duration (ms)
+    AMBIENT_FADE_OUT: 2000        // Ambient sound fade out duration (ms)
 };
 
 // =============================================
@@ -73,6 +75,7 @@ const STORAGE_KEYS = {
     TEMPLATES: 'pulsedrift-templates',
     JOURNAL: 'pulsedrift-journal',
     ACHIEVEMENTS: 'pulsedrift-achievements',
+    GUIDED_SETTINGS: 'pulsedrift_guided_settings',
     ACCORDION_PREFIX: 'accordion_'
 };
 
@@ -111,6 +114,19 @@ const AUDIO_CONFIG = {
     FADE_DURATION: 2,             // Ambient fade in/out duration in seconds
     BELL_DURATION_NORMAL: 5,      // Normal bell sound duration
     BELL_DURATION_COMPLETION: 8   // Completion bell sound duration
+};
+
+// =============================================
+// Guided Meditation Defaults
+// =============================================
+
+const GUIDED_CONFIG = {
+    BREATHING_GUIDANCE_ENABLED: true,
+    MANTRA_ENABLED: false,
+    DEFAULT_MANTRA: 'I am calm and present',
+    MANTRA_INTERVAL_MS: 5 * 60 * 1000, // 5 minutes
+    TTS_RATE: 0.95,                    // Speech rate (slightly slower)
+    TTS_VOLUME: 0.8                    // TTS volume level
 };
 
 // =============================================

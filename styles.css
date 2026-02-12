@@ -1284,6 +1284,102 @@ body {
 }
 
 /* =============================================
+   Reflection Prompt & Meditation Enhancements
+   ============================================= */
+
+.reflection-prompt {
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, rgba(126, 231, 135, 0.1), rgba(210, 168, 255, 0.1));
+    border: 1px solid rgba(126, 231, 135, 0.3);
+    border-radius: var(--radius-md);
+    color: var(--accent-zen);
+    font-size: var(--font-size-md);
+    font-style: italic;
+    margin-bottom: var(--space-lg);
+    animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(126, 231, 135, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(126, 231, 135, 0.35);
+    }
+}
+
+.zen-reflection-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    background: rgba(126, 231, 135, 0.15);
+    border: 1px solid rgba(126, 231, 135, 0.4);
+    border-radius: 8px;
+    color: var(--accent-zen);
+    font-size: 14px;
+    z-index: 9999;
+    font-family: var(--font-family);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOutDown {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+/* Breathing visual enhancement - phase-based opacity */
+.breath-circle-large.inhale {
+    opacity: 0.9;
+    filter: brightness(1.1);
+}
+
+.breath-circle-large.hold {
+    opacity: 0.8;
+}
+
+.breath-circle-large.exhale {
+    opacity: 0.65;
+}
+
+.breath-circle-small.inhale {
+    opacity: 0.9;
+}
+
+.breath-circle-small.exhale {
+    opacity: 0.65;
+}
+
+/* =============================================
    Utility Classes
    ============================================= */
 

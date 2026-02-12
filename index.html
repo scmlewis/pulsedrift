@@ -553,6 +553,9 @@
             </div>
             <p class="complete-message" id="completeMessage">Well done. Carry this peace with you.</p>
             
+            <!-- Session Reflection Prompt (NEW) -->
+            <div class="reflection-prompt" id="reflectionPrompt" style="display:none;" role="region" aria-label="Reflection prompt"></div>
+            
             <!-- Achievement Badge (if milestone reached) -->
             <div class="achievement-badge hidden" id="achievementBadge">
                 <div class="achievement-icon" id="achievementIcon"></div>
@@ -620,6 +623,7 @@
     <canvas class="particle-canvas" id="particleCanvas"></canvas>
 
     <script src="constants.js"></script>
+    <script src="guided.js"></script>
     <script src="app.js"></script>
     <script src="enhancements.js"></script>
 </body>
