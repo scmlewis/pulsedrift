@@ -292,7 +292,17 @@ function fadeOutAmbientSound(duration = 2000) {
     if (!state.audio.masterGain) return;
 
     const startTime = state.audio.context.currentTime;
-    state.audio.masterGain.gain.setTargetAtTime(0, startTime, duration / 5000);
+    // Safely ramp strictly to 0 to eliminate any residual noise that causes popping or trailing sound
+    state.audio.masterGain.gain.setValueAtTime(state.audio.masterGain.gain.value, startTime);
+    state.audio.masterGain.gain.linearRampToValueAtTime(0.001, startTime + (duration / 1000) * 0.9);
+    state.audio.masterGain.gain.linearRampToValueAtTime(0, startTime + (duration / 1000));
+
+    // Fully tear down generators and reset state flag so recursive calls stop
+    setTimeout(() => {
+        if (!state.timer.isRunning && typeof stopAmbientSound === 'function') {
+            stopAmbientSound();
+        }
+    }, duration + 50);
 }
 
 // =============================================
@@ -312,8 +322,7 @@ function updateBreathingVisualsWithPhase(phase, intensity = 1) {
 
     const breathCircles = [
         document.getElementById('breathCircleLarge'),
-        document.getElementById('breathCircleSmall'),
-        document.getElementById('breathingCircle')
+        document.getElementById('breathCircleSmall')
     ];
 
     breathCircles.forEach(circle => {

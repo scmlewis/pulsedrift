@@ -73,9 +73,6 @@ const DOM = {
     setCustomTime: document.getElementById('setCustomTime'),
     setCustomTimeDesktop: document.getElementById('setCustomTimeDesktop'),
 
-    // Breathing
-    breathingCircle: document.getElementById('breathingCircle'),
-    breathText: document.getElementById('breathText'),
     breathingModal: document.getElementById('breathingModal'),
     breathCircleLarge: document.getElementById('breathCircleLarge'),
     breathInstruction: document.getElementById('breathInstruction'),
@@ -355,9 +352,19 @@ function setupEventListeners() {
                 startAmbientSound();
             } else {
                 startAmbientSound();
+                if (typeof fadeInAmbientSound === 'function') {
+                    fadeInAmbientSound(500); // quick fade in for preview
+                } else if (state.audio.masterGain) {
+                    state.audio.masterGain.gain.setValueAtTime(state.audio.volume, state.audio.context.currentTime);
+                }
+
                 state.audio.previewTimeout = setTimeout(() => {
                     if (!state.timer.isRunning) {
-                        stopAmbientSound();
+                        if (typeof fadeOutAmbientSound === 'function') {
+                            fadeOutAmbientSound(1500);
+                        } else {
+                            stopAmbientSound();
+                        }
                     }
                     state.audio.previewTimeout = null;
                 }, UI_TIMING.AMBIENT_PREVIEW_DURATION);
@@ -567,11 +574,6 @@ function startTimer() {
         }
     }
 
-    // Start breathing guide if auto-start is enabled
-    if (state.settings.autoBreathing) {
-        startInlineBreathing();
-    }
-
     // Show intention during meditation
     showIntentionDuringMeditation();
 
@@ -617,7 +619,6 @@ function pauseTimer() {
     if (typeof stopMantraReminders === 'function') {
         stopMantraReminders();
     }
-    stopInlineBreathing();
     hideIntentionDuringMeditation();
     updateTimerUI();
 }
@@ -638,8 +639,7 @@ function completeTimer() {
     // Play completion bell
     playBellSound(1, true);
 
-    // Stop breathing and mantra
-    stopInlineBreathing();
+    // Stop mantra
     if (typeof stopMantraReminders === 'function') {
         stopMantraReminders();
     }
@@ -1283,10 +1283,6 @@ function openBreathingModal() {
 function closeBreathingModal() {
     DOM.breathingModal.classList.add('hidden');
     stopBreathingExercise();
-    // Ensure the breathing circle is fully cleared so it does not linger on the main screen
-    if (DOM.breathingCircle) {
-        DOM.breathingCircle.classList.remove('active', 'inhale', 'exhale', 'hold');
-    }
 }
 
 function toggleBreathingExercise() {
@@ -1415,56 +1411,6 @@ function parseBreathingPattern(pattern) {
             { name: 'exhale', label: 'Exhale', duration: 4 }
         ]
     };
-}
-
-// Inline breathing (on main timer screen)
-function startInlineBreathing() {
-    if (state.breathing.isActive) return;
-
-    state.breathing.isActive = true;
-    state.breathing.pattern = state.settings.breathingPattern;
-    DOM.breathingCircle.classList.add('active');
-    runInlineBreathingCycle();
-}
-
-function stopInlineBreathing() {
-    state.breathing.isActive = false;
-    DOM.breathingCircle.classList.remove('active', 'inhale', 'hold', 'exhale');
-    DOM.breathText.textContent = 'Breathe';
-
-    if (state.breathing.intervalId) {
-        clearTimeout(state.breathing.intervalId);
-        state.breathing.intervalId = null;
-    }
-}
-
-function runInlineBreathingCycle() {
-    if (!state.breathing.isActive) return;
-
-    const pattern = parseBreathingPattern(state.breathing.pattern);
-    const phases = pattern.phases;
-    let phaseIndex = 0;
-
-    const runPhase = () => {
-        if (!state.breathing.isActive) return;
-
-        const phase = phases[phaseIndex];
-
-        // Update inline breathing circle
-        DOM.breathingCircle.className = `breathing-circle active ${phase.name}`;
-        DOM.breathText.textContent = phase.label;
-
-        // Move to next phase after duration
-        state.breathing.intervalId = setTimeout(() => {
-            phaseIndex++;
-            if (phaseIndex >= phases.length) {
-                phaseIndex = 0;
-            }
-            runPhase();
-        }, phase.duration * 1000);
-    };
-
-    runPhase();
 }
 
 // =============================================
