@@ -41,7 +41,8 @@ const state = {
         intervalBell: 0, // minutes, 0 = off
         breathingPattern: '4-4',
         notifications: true,
-        autoBreathing: false
+        autoBreathing: false,
+        theme: 'default'
     },
     sessions: [],
     focusMode: false
@@ -71,7 +72,7 @@ const DOM = {
     customSecondsDesktop: document.getElementById('customSecondsDesktop'),
     setCustomTime: document.getElementById('setCustomTime'),
     setCustomTimeDesktop: document.getElementById('setCustomTimeDesktop'),
-    
+
     // Breathing
     breathingCircle: document.getElementById('breathingCircle'),
     breathText: document.getElementById('breathText'),
@@ -82,7 +83,7 @@ const DOM = {
     breathStartBtn: document.getElementById('breathStartBtn'),
     breathingPatternSelect: document.getElementById('breathingPatternSelect'),
     closeBreathingBtn: document.getElementById('closeBreathingBtn'),
-    
+
     // Desktop Sidebar Breathing Guide
     breathingGuideToggle: document.getElementById('breathingGuideToggle'),
     breathingGuideContent: document.getElementById('breathingGuideContent'),
@@ -90,12 +91,12 @@ const DOM = {
     breathInstructionSmall: document.getElementById('breathInstructionSmall'),
     breathStartBtnSmall: document.getElementById('breathStartBtnSmall'),
     breathingPatternSidebar: document.getElementById('breathingPatternSidebar'),
-    
+
     // Audio
     bellSound: document.getElementById('bellSound'),
     ambientSound: document.getElementById('ambientSound'),
     volumeSlider: document.getElementById('volumeSlider'),
-    
+
     // Quote & Intention
     dailyQuote: document.getElementById('dailyQuote'),
     quoteAuthor: document.getElementById('quoteAuthor'),
@@ -105,7 +106,7 @@ const DOM = {
     intentionText: document.getElementById('intentionText'),
     completeIntention: document.getElementById('completeIntention'),
     completeIntentionText: document.getElementById('completeIntentionText'),
-    
+
     // Panels & Modals
     historyPanel: document.getElementById('historyPanel'),
     historyBtn: document.getElementById('historyBtn'),
@@ -118,28 +119,29 @@ const DOM = {
     settingsModal: document.getElementById('settingsModal'),
     settingsBtn: document.getElementById('settingsBtn'),
     closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-    
+
     // Settings
     intervalBell: document.getElementById('intervalBell'),
     breathingPattern: document.getElementById('breathingPattern'),
     notificationsToggle: document.getElementById('notificationsToggle'),
     autoBreathingToggle: document.getElementById('autoBreathingToggle'),
-    
+    themeSelect: document.getElementById('themeSelect'),
+
     // Focus Mode
     focusModeBtn: document.getElementById('focusModeBtn'),
     focusModeExit: document.getElementById('focusModeExit'),
     appContainer: document.getElementById('appContainer'),
-    
+
     // Complete Overlay
     completeOverlay: document.getElementById('completeOverlay'),
     completeDuration: document.getElementById('completeDuration'),
     completeMessage: document.getElementById('completeMessage'),
     reflectionPrompt: document.getElementById('reflectionPrompt'),
     completeBtn: document.getElementById('completeBtn'),
-    
+
     // Ripples
     rippleContainer: document.getElementById('rippleContainer'),
-    
+
     // Mini Stats Widget
     miniStatsWidget: document.getElementById('miniStatsWidget'),
     miniStatToday: document.getElementById('miniStatToday'),
@@ -148,11 +150,11 @@ const DOM = {
     miniStatsDetails: document.getElementById('miniStatsDetails'),
     miniStatTotalSessions: document.getElementById('miniStatTotalSessions'),
     miniStatTotalMinutes: document.getElementById('miniStatTotalMinutes'),
-    
+
     // Accordion
     soundSettingsToggle: document.getElementById('soundSettingsToggle'),
     soundSettingsContent: document.getElementById('soundSettingsContent'),
-    
+
     // Toast & Particles
     toastContainer: document.getElementById('toastContainer'),
     particleCanvas: document.getElementById('particleCanvas')
@@ -231,7 +233,7 @@ function init() {
     updateHistoryStats();
     renderHistory();
     requestNotificationPermission();
-    
+
     // Initialize new features
     initAccordions();
     if (typeof initGuidedFeatures === 'function') {
@@ -248,35 +250,46 @@ function loadSettings() {
     if (savedSettings) {
         Object.assign(state.settings, savedSettings);
     }
-    
+
     const savedVolume = safeGetRawItem(STORAGE_KEYS.VOLUME, '');
     if (savedVolume) {
         state.audio.volume = parseFloat(savedVolume) || AUDIO_CONFIG.DEFAULT_VOLUME;
         DOM.volumeSlider.value = state.audio.volume * 100;
     }
-    
+
     const savedBellSound = safeGetRawItem(STORAGE_KEYS.BELL_SOUND, '');
     if (savedBellSound) {
         state.audio.bellSound = savedBellSound;
         DOM.bellSound.value = savedBellSound;
     }
-    
+
     const savedAmbientSound = safeGetRawItem(STORAGE_KEYS.AMBIENT_SOUND, '');
     if (savedAmbientSound) {
         state.audio.ambientSound = savedAmbientSound;
         DOM.ambientSound.value = savedAmbientSound;
     }
-    
+
     const savedIntention = safeGetRawItem(STORAGE_KEYS.INTENTION, '');
     if (savedIntention) {
         DOM.intentionInput.value = savedIntention;
     }
-    
+
     // Update settings UI
     DOM.intervalBell.value = state.settings.intervalBell;
     DOM.breathingPattern.value = state.settings.breathingPattern;
     DOM.notificationsToggle.checked = state.settings.notifications;
     DOM.autoBreathingToggle.checked = state.settings.autoBreathing;
+    if (DOM.themeSelect) {
+        DOM.themeSelect.value = state.settings.theme || 'default';
+        applyTheme(state.settings.theme || 'default');
+    }
+}
+
+function applyTheme(theme) {
+    document.body.classList.remove('theme-ocean', 'theme-forest', 'theme-sunset');
+    if (theme && theme !== 'default') {
+        document.body.classList.add(`theme-${theme}`);
+    }
 }
 
 function saveSettings() {
@@ -303,21 +316,21 @@ function setupEventListeners() {
     DOM.startBtn.addEventListener('click', toggleTimer);
     DOM.resetBtn.addEventListener('click', resetTimer);
     DOM.breathingBtn.addEventListener('click', openBreathingModal);
-    
+
     // Presets (Mobile/Sidebar)
     DOM.presets.querySelectorAll('.preset-btn:not(.custom-btn)').forEach(btn => {
         btn.addEventListener('click', () => selectPreset(btn));
     });
     DOM.customTimeBtn.addEventListener('click', toggleCustomTimeInput);
     DOM.setCustomTime.addEventListener('click', setCustomTime);
-    
+
     // Presets (Desktop)
     DOM.presetsDesktop.querySelectorAll('.preset-btn:not(.custom-btn)').forEach(btn => {
         btn.addEventListener('click', () => selectPreset(btn));
     });
     DOM.customTimeBtnDesktop.addEventListener('click', toggleCustomTimeInputDesktop);
     DOM.setCustomTimeDesktop.addEventListener('click', setCustomTimeDesktop);
-    
+
     // Sound controls
     DOM.bellSound.addEventListener('change', (e) => {
         state.audio.bellSound = e.target.value;
@@ -327,7 +340,7 @@ function setupEventListeners() {
             playBellSound(0.5);
         }
     });
-    
+
     DOM.ambientSound.addEventListener('change', (e) => {
         state.audio.ambientSound = e.target.value;
         safeSetRawItem(STORAGE_KEYS.AMBIENT_SOUND, e.target.value);
@@ -351,7 +364,7 @@ function setupEventListeners() {
             }
         }
     });
-    
+
     DOM.volumeSlider.addEventListener('input', (e) => {
         state.audio.volume = e.target.value / 100;
         safeSetRawItem(STORAGE_KEYS.VOLUME, state.audio.volume.toString());
@@ -359,37 +372,37 @@ function setupEventListeners() {
             state.audio.masterGain.gain.value = state.audio.volume;
         }
     });
-    
+
     // Intention
     DOM.intentionInput.addEventListener('change', (e) => {
         safeSetRawItem(STORAGE_KEYS.INTENTION, e.target.value);
     });
-    
+
     DOM.intentionInput.addEventListener('input', (e) => {
         updateCharCounter();
     });
-    
+
     // History panel
     DOM.historyBtn.addEventListener('click', () => DOM.historyPanel.classList.add('open'));
     DOM.closeHistoryBtn.addEventListener('click', () => DOM.historyPanel.classList.remove('open'));
     DOM.clearHistoryBtn.addEventListener('click', clearHistory);
-    
+
     // Settings modal
     DOM.settingsBtn.addEventListener('click', () => DOM.settingsModal.classList.remove('hidden'));
     DOM.closeSettingsBtn.addEventListener('click', () => DOM.settingsModal.classList.add('hidden'));
-    
+
     // Settings controls
     DOM.intervalBell.addEventListener('change', (e) => {
         state.settings.intervalBell = parseInt(e.target.value);
         saveSettings();
     });
-    
+
     DOM.breathingPattern.addEventListener('change', (e) => {
         state.settings.breathingPattern = e.target.value;
         state.breathing.pattern = e.target.value;
         saveSettings();
     });
-    
+
     DOM.notificationsToggle.addEventListener('change', (e) => {
         state.settings.notifications = e.target.checked;
         if (e.target.checked) {
@@ -397,22 +410,43 @@ function setupEventListeners() {
         }
         saveSettings();
     });
-    
+
     DOM.autoBreathingToggle.addEventListener('change', (e) => {
         state.settings.autoBreathing = e.target.checked;
         saveSettings();
     });
-    
+
+    if (DOM.themeSelect) {
+        DOM.themeSelect.addEventListener('change', (e) => {
+            state.settings.theme = e.target.value;
+            applyTheme(state.settings.theme);
+            saveSettings();
+        });
+    }
+
     // Focus mode
-    DOM.focusModeBtn.addEventListener('click', toggleFocusMode);
-    
+    if (DOM.focusModeBtn) {
+        DOM.focusModeBtn.addEventListener('click', toggleFocusMode);
+    }
+    if (DOM.focusModeExit) {
+        DOM.focusModeExit.addEventListener('click', toggleFocusMode);
+    }
+    function showFocusHint() {
+        const hint = document.getElementById('focusHint');
+        if (hint) hint.classList.remove('hidden');
+    }
+    function hideFocusHint() {
+        const hint = document.getElementById('focusHint');
+        if (hint) hint.classList.add('hidden');
+    }
+
     // Breathing modal
     DOM.closeBreathingBtn.addEventListener('click', closeBreathingModal);
     DOM.breathStartBtn.addEventListener('click', toggleBreathingExercise);
     DOM.breathingPatternSelect.addEventListener('change', (e) => {
         state.breathing.pattern = e.target.value;
     });
-    
+
     // Desktop Sidebar Breathing Guide
     if (DOM.breathingGuideToggle) {
         DOM.breathingGuideToggle.addEventListener('click', toggleSidebarBreathingGuide);
@@ -425,34 +459,34 @@ function setupEventListeners() {
             state.breathing.pattern = e.target.value;
         });
     }
-    
+
     // Complete overlay
     DOM.completeBtn.addEventListener('click', () => {
         DOM.completeOverlay.classList.add('hidden');
     });
-    
+
     // Accordion toggles
     if (DOM.soundSettingsToggle) {
         DOM.soundSettingsToggle.addEventListener('click', () => {
             toggleAccordion('soundSettingsToggle', 'soundSettingsContent', 'soundSettings');
         });
     }
-    
+
     // Mini stats expand/collapse
     if (DOM.miniStatsExpand) {
         DOM.miniStatsExpand.addEventListener('click', toggleMiniStatsExpanded);
     }
-    
+
     // Keyboard shortcuts
     document.addEventListener('keydown', handleKeyPress);
-    
+
     // Close panels/modals on outside click
     DOM.settingsModal.addEventListener('click', (e) => {
         if (e.target === DOM.settingsModal) {
             DOM.settingsModal.classList.add('hidden');
         }
     });
-    
+
     DOM.breathingModal.addEventListener('click', (e) => {
         if (e.target === DOM.breathingModal) {
             closeBreathingModal();
@@ -466,17 +500,17 @@ function handleKeyPress(e) {
         e.preventDefault();
         toggleTimer();
     }
-    
+
     // R to reset
     if (e.code === 'KeyR' && e.target.tagName !== 'INPUT') {
         resetTimer();
     }
-    
+
     // F for focus mode
     if (e.code === 'KeyF' && e.target.tagName !== 'INPUT') {
         toggleFocusMode();
     }
-    
+
     // Escape to close modals
     if (e.code === 'Escape') {
         DOM.settingsModal.classList.add('hidden');
@@ -504,20 +538,20 @@ function startTimer() {
     if (state.timer.remaining <= 0) {
         resetTimer();
     }
-    
+
     initAudioContext();
     if (state.audio.previewTimeout) {
         clearTimeout(state.audio.previewTimeout);
         state.audio.previewTimeout = null;
     }
-    
+
     state.timer.isRunning = true;
     state.timer.isPaused = false;
     state.timer.startTime = Date.now();
-    
+
     // Play start bell
     playBellSound();
-    
+
     // Start ambient sound with fade-in
     if (state.audio.ambientSound !== 'silence') {
         startAmbientSound();
@@ -525,35 +559,35 @@ function startTimer() {
             fadeInAmbientSound(UI_TIMING.AMBIENT_FADE_IN);
         }
     }
-    
+
     // Start mantra reminders if enabled
     if (typeof guidedState !== 'undefined' && (guidedState.breathingGuidanceEnabled || guidedState.mantraText)) {
         if (typeof startMantraReminders === 'function') {
             startMantraReminders();
         }
     }
-    
+
     // Start breathing guide if auto-start is enabled
     if (state.settings.autoBreathing) {
         startInlineBreathing();
     }
-    
+
     // Show intention during meditation
     showIntentionDuringMeditation();
-    
+
     updateTimerUI();
-    
+
     // Store original duration for session tracking
     if (!state.timer.isPaused) {
         state.timer.originalDuration = state.timer.duration;
     }
-    
+
     // Timer interval
     state.timer.intervalId = setInterval(() => {
         state.timer.remaining--;
         updateTimerDisplay();
         updateTimerProgress();
-        
+
         // Check for interval bell
         if (state.settings.intervalBell > 0 && state.timer.remaining > 0) {
             const elapsed = state.timer.duration - state.timer.remaining;
@@ -561,7 +595,7 @@ function startTimer() {
                 playBellSound(0.4); // Softer interval bell
             }
         }
-        
+
         if (state.timer.remaining <= 0) {
             completeTimer();
         }
@@ -571,12 +605,12 @@ function startTimer() {
 function pauseTimer() {
     state.timer.isRunning = false;
     state.timer.isPaused = true;
-    
+
     if (state.timer.intervalId) {
         clearInterval(state.timer.intervalId);
         state.timer.intervalId = null;
     }
-    
+
     if (typeof fadeOutAmbientSound === 'function') {
         fadeOutAmbientSound(UI_TIMING.AMBIENT_FADE_OUT);
     }
@@ -600,29 +634,29 @@ function resetTimer() {
 function completeTimer() {
     pauseTimer();
     state.timer.isPaused = false;
-    
+
     // Play completion bell
     playBellSound(1, true);
-    
+
     // Stop breathing and mantra
     stopInlineBreathing();
     if (typeof stopMantraReminders === 'function') {
         stopMantraReminders();
     }
-    
+
     // Hide intention display
     hideIntentionDuringMeditation();
-    
+
     // Play guided completion sequence asynchronously
     if (typeof guidedState !== 'undefined' && guidedState.breathingGuidanceEnabled) {
         if (typeof playSessionCompletionGuidance === 'function') {
             playSessionCompletionGuidance().catch(e => console.log('Completion guidance error:', e));
         }
     }
-    
+
     // Get current intention
     const intention = DOM.intentionInput.value.trim();
-    
+
     // Record session with intention
     const session = {
         id: Date.now(),
@@ -635,16 +669,16 @@ function completeTimer() {
     saveSessions();
     updateHistoryStats();
     renderHistory();
-    
+
     // Show reflection prompt and completion overlay
     if (typeof showSessionReflectionPrompt === 'function') {
         showSessionReflectionPrompt(session);
     }
     showCompletionOverlay(intention);
-    
+
     // Send notification
     sendNotification('Meditation Complete', `You completed ${formatTime(state.timer.originalDuration)} of mindfulness.`);
-    
+
     // Reset timer
     state.timer.remaining = state.timer.duration;
     updateTimerDisplay();
@@ -664,7 +698,7 @@ function updateTimerProgress() {
     const progress = state.timer.remaining / state.timer.duration;
     const offset = circumference * (1 - progress);
     DOM.timerProgress.style.strokeDashoffset = offset;
-    
+
     // Change color as timer progresses
     if (progress < 0.25) {
         DOM.timerProgress.style.stroke = 'var(--accent-lotus)';
@@ -678,7 +712,7 @@ function updateTimerProgress() {
 function updateTimerUI() {
     const playIcon = DOM.startBtn.querySelector('.play-icon');
     const pauseIcon = DOM.startBtn.querySelector('.pause-icon');
-    
+
     if (state.timer.isRunning) {
         playIcon.classList.add('hidden');
         pauseIcon.classList.remove('hidden');
@@ -694,27 +728,27 @@ function selectPreset(btn) {
     // Update UI - Remove active from both preset containers
     DOM.presets.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     DOM.presetsDesktop.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-    
+
     // Add active to clicked button
     btn.classList.add('active');
-    
+
     // Also sync the corresponding button in the other container
     const minutes = btn.dataset.minutes;
-    const otherBtn = btn.closest('#presets') 
+    const otherBtn = btn.closest('#presets')
         ? DOM.presetsDesktop.querySelector(`[data-minutes="${minutes}"]`)
         : DOM.presets.querySelector(`[data-minutes="${minutes}"]`);
     if (otherBtn) {
         otherBtn.classList.add('active');
     }
-    
+
     // Set duration
     state.timer.duration = parseInt(minutes) * 60;
     state.timer.remaining = state.timer.duration;
-    
+
     // Hide both custom inputs
     DOM.customTimeInput.classList.add('hidden');
     DOM.customTimeInputDesktop.classList.add('hidden');
-    
+
     updateTimerDisplay();
     updateTimerProgress();
 }
@@ -737,11 +771,11 @@ function setCustomTime() {
     const minutes = parseInt(DOM.customMinutes.value) || 0;
     const seconds = parseInt(DOM.customSeconds.value) || 0;
     const totalSeconds = (minutes * 60) + seconds;
-    
+
     if (totalSeconds > 0 && totalSeconds <= 59940) { // Max 999 minutes
         state.timer.duration = totalSeconds;
         state.timer.remaining = totalSeconds;
-        
+
         // Update UI - both containers
         DOM.presets.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
         DOM.presetsDesktop.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
@@ -749,11 +783,11 @@ function setCustomTime() {
         DOM.customTimeBtnDesktop.classList.add('active');
         DOM.customTimeInput.classList.add('hidden');
         DOM.customTimeInputDesktop.classList.add('hidden');
-        
+
         // Sync values
         DOM.customMinutesDesktop.value = DOM.customMinutes.value;
         DOM.customSecondsDesktop.value = DOM.customSeconds.value;
-        
+
         updateTimerDisplay();
         updateTimerProgress();
     }
@@ -763,11 +797,11 @@ function setCustomTimeDesktop() {
     const minutes = parseInt(DOM.customMinutesDesktop.value) || 0;
     const seconds = parseInt(DOM.customSecondsDesktop.value) || 0;
     const totalSeconds = (minutes * 60) + seconds;
-    
+
     if (totalSeconds > 0 && totalSeconds <= 59940) { // Max 999 minutes
         state.timer.duration = totalSeconds;
         state.timer.remaining = totalSeconds;
-        
+
         // Update UI - both containers
         DOM.presets.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
         DOM.presetsDesktop.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
@@ -775,11 +809,11 @@ function setCustomTimeDesktop() {
         DOM.customTimeBtnDesktop.classList.add('active');
         DOM.customTimeInput.classList.add('hidden');
         DOM.customTimeInputDesktop.classList.add('hidden');
-        
+
         // Sync values
         DOM.customMinutes.value = DOM.customMinutesDesktop.value;
         DOM.customSeconds.value = DOM.customSecondsDesktop.value;
-        
+
         updateTimerDisplay();
         updateTimerProgress();
     }
@@ -796,7 +830,7 @@ function initAudioContext() {
         state.audio.masterGain.gain.value = state.audio.volume;
         state.audio.masterGain.connect(state.audio.context.destination);
     }
-    
+
     // Resume context if suspended (for autoplay policy)
     if (state.audio.context.state === 'suspended') {
         state.audio.context.resume();
@@ -805,11 +839,11 @@ function initAudioContext() {
 
 function playBellSound(volumeMultiplier = 1, isCompletion = false) {
     if (state.audio.bellSound === 'silence') return;
-    
+
     initAudioContext();
     const ctx = state.audio.context;
     const now = ctx.currentTime;
-    
+
     switch (state.audio.bellSound) {
         case 'singing-bowl':
             playSingingBowl(ctx, now, volumeMultiplier, isCompletion);
@@ -826,15 +860,15 @@ function playBellSound(volumeMultiplier = 1, isCompletion = false) {
 function playSingingBowl(ctx, now, volumeMultiplier, isCompletion) {
     const duration = isCompletion ? 8 : 5;
     const frequencies = isCompletion ? [220, 330, 440, 550] : [220, 330, 440];
-    
+
     frequencies.forEach((freq, i) => {
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
-        
+
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(freq, now);
         oscillator.frequency.exponentialRampToValueAtTime(freq * 0.98, now + duration);
-        
+
         // Add slight vibrato
         const vibrato = ctx.createOscillator();
         const vibratoGain = ctx.createGain();
@@ -844,15 +878,15 @@ function playSingingBowl(ctx, now, volumeMultiplier, isCompletion) {
         vibratoGain.connect(oscillator.frequency);
         vibrato.start(now);
         vibrato.stop(now + duration);
-        
+
         const baseVolume = 0.15 * volumeMultiplier * (1 - i * 0.2);
         gainNode.gain.setValueAtTime(0, now);
         gainNode.gain.linearRampToValueAtTime(baseVolume, now + 0.05);
         gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(state.audio.masterGain);
-        
+
         oscillator.start(now);
         oscillator.stop(now + duration);
     });
@@ -861,7 +895,7 @@ function playSingingBowl(ctx, now, volumeMultiplier, isCompletion) {
 function playSoftGong(ctx, now, volumeMultiplier, isCompletion) {
     const duration = isCompletion ? 6 : 4;
     const freq = isCompletion ? 80 : 100;
-    
+
     // Fundamental
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
@@ -874,7 +908,7 @@ function playSoftGong(ctx, now, volumeMultiplier, isCompletion) {
     gain1.connect(state.audio.masterGain);
     osc1.start(now);
     osc1.stop(now + duration);
-    
+
     // Overtones
     [2, 3, 4.5].forEach((mult, i) => {
         const osc = ctx.createOscillator();
@@ -894,23 +928,23 @@ function playSoftGong(ctx, now, volumeMultiplier, isCompletion) {
 function playTempleBell(ctx, now, volumeMultiplier, isCompletion) {
     const duration = isCompletion ? 5 : 3;
     const baseFreq = 800;
-    
+
     // Main tone
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(baseFreq, now);
     osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.95, now + duration);
-    
+
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(0.2 * volumeMultiplier, now + 0.002);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-    
+
     osc.connect(gain);
     gain.connect(state.audio.masterGain);
     osc.start(now);
     osc.stop(now + duration);
-    
+
     // Harmonics
     [2, 2.4, 3].forEach((mult, i) => {
         const oscH = ctx.createOscillator();
@@ -927,60 +961,298 @@ function playTempleBell(ctx, now, volumeMultiplier, isCompletion) {
     });
 }
 
-// Ambient Sounds
 function startAmbientSound() {
     if (state.audio.isAmbientPlaying) return;
-    
+
     initAudioContext();
     const ctx = state.audio.context;
-    
+
     switch (state.audio.ambientSound) {
-        case 'rain':
-            createRainSound(ctx);
-            break;
-        case 'waves':
-            createWavesSound(ctx);
-            break;
-        case 'forest':
-            createForestSound(ctx);
-            break;
-        case 'wind':
-            createWindSound(ctx);
-            break;
-        case 'zen':
-            createZenMusic(ctx);
-            break;
+        case 'rain': createRainSound(ctx); break;
+        case 'waves': createWavesSound(ctx); break;
+        case 'forest': createForestSound(ctx); break;
+        case 'wind': createWindSound(ctx); break;
+        case 'zen': createZenMusic(ctx); break;
+        case 'fire': createFireSound(ctx); break;
+        case 'brownNoise': createBrownNoiseSound(ctx); break;
+        case 'chants': createChantsSound(ctx); break;
     }
-    
+
     state.audio.isAmbientPlaying = true;
 }
 
-function stopAmbientSound() {
-    if (state.audio.ambientNode) {
-        try {
-            state.audio.ambientNode.stop();
-        } catch (e) {
-            // Node already stopped
+function createNoiseBuffer(ctx, type) {
+    const bufferSize = 2 * ctx.sampleRate;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let lastOut = 0;
+    for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        if (type === 'brown') {
+            data[i] = (lastOut + (0.02 * white)) / 1.02;
+            lastOut = data[i];
+            data[i] *= 3.5;
+        } else if (type === 'pink') {
+            // Simplified pink noise
+            data[i] = (lastOut + (0.05 * white)) / 1.05;
+            lastOut = data[i];
+            data[i] *= 2;
+        } else {
+            data[i] = white;
         }
-        state.audio.ambientNode = null;
     }
-    if (state.audio.ambientNodes.length > 0) {
+    return buffer;
+}
+
+function createRainSound(ctx) {
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 'pink');
+    noise.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 1200;
+
+    const gain = ctx.createGain();
+    gain.gain.value = 0.8;
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(state.audio.masterGain);
+
+    noise.start();
+    registerAmbientNode(noise);
+    registerAmbientNode(filter);
+    registerAmbientNode(gain);
+}
+
+function createWavesSound(ctx) {
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 'pink');
+    noise.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 400;
+
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.1;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 300;
+
+    const gain = ctx.createGain();
+    gain.gain.value = 0.8;
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(state.audio.masterGain);
+
+    noise.start();
+    lfo.start();
+    registerAmbientNode(noise);
+    registerAmbientNode(lfo);
+    registerAmbientNode(lfoGain);
+    registerAmbientNode(filter);
+    registerAmbientNode(gain);
+}
+
+function createForestSound(ctx) {
+    // Gentle pink noise for wind
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 'pink');
+    noise.loop = true;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 800;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.3;
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(state.audio.masterGain);
+    noise.start();
+    registerAmbientNode(noise);
+    registerAmbientNode(filter);
+    registerAmbientNode(gain);
+
+    // Realistic bird chirps
+    const scheduleBird = () => {
+        if (!state.audio.isAmbientPlaying || state.audio.ambientSound !== 'forest') return;
+        const now = ctx.currentTime;
+        const baseFreq = 3000 + Math.random() * 2000;
+
+        for (let i = 0; i < 2 + Math.floor(Math.random() * 3); i++) {
+            const osc = ctx.createOscillator();
+            const oscGain = ctx.createGain();
+            osc.type = 'sine';
+
+            osc.frequency.setValueAtTime(baseFreq, now + i * 0.2);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq + 800, now + i * 0.2 + 0.05);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq, now + i * 0.2 + 0.15);
+
+            oscGain.gain.setValueAtTime(0, now + i * 0.2);
+            oscGain.gain.linearRampToValueAtTime(0.5, now + i * 0.2 + 0.05); // increased volume
+            oscGain.gain.linearRampToValueAtTime(0, now + i * 0.2 + 0.15);
+
+            osc.connect(oscGain);
+            oscGain.connect(state.audio.masterGain);
+
+            osc.start(now + i * 0.2);
+            osc.stop(now + i * 0.2 + 0.2);
+        }
+        setTimeout(scheduleBird, 3000 + Math.random() * 6000);
+    };
+    scheduleBird();
+}
+
+function createWindSound(ctx) {
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 'pink');
+    noise.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 500;
+
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.05;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 400; // Strong swept filter sound
+
+    const gain = ctx.createGain();
+    gain.gain.value = 0.6;
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(state.audio.masterGain);
+
+    noise.start();
+    lfo.start();
+    registerAmbientNode(noise);
+    registerAmbientNode(lfo);
+    registerAmbientNode(lfoGain);
+    registerAmbientNode(filter);
+    registerAmbientNode(gain);
+}
+
+function createZenMusic(ctx) {
+    const now = ctx.currentTime;
+    const baseGain = ctx.createGain();
+    baseGain.gain.value = 0.6; // Increased from 0.14
+    baseGain.connect(state.audio.masterGain);
+
+    const lowpass = ctx.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.value = 1500;
+    lowpass.Q.value = 1.0;
+    lowpass.connect(baseGain);
+
+    const chord = [261.63, 329.63, 392.0, 523.25]; // C Major
+
+    chord.forEach((freq, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = index % 2 === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.0, now);
+        gain.gain.linearRampToValueAtTime(0.15, now + 3); // LOUDER!
+        gain.gain.linearRampToValueAtTime(0.05, now + 6);
+
+        osc.connect(gain);
+        gain.connect(lowpass);
+
+        osc.start(now);
+        registerAmbientNode(osc);
+        registerAmbientNode(gain);
+    });
+
+    registerAmbientNode(lowpass);
+    registerAmbientNode(baseGain);
+}
+
+function createFireSound(ctx) {
+    // Smoother fire sound
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 'brown'); // Less harsh white noise
+    noise.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 300; // Muffled base
+
+    const gain = ctx.createGain();
+    gain.gain.value = 1.0;
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(state.audio.masterGain);
+
+    noise.start();
+    registerAmbientNode(noise);
+    registerAmbientNode(filter);
+    registerAmbientNode(gain);
+}
+
+function createBrownNoiseSound(ctx) {
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 'brown');
+    noise.loop = true;
+
+    const gain = ctx.createGain();
+    gain.gain.value = 0.8;
+
+    noise.connect(gain);
+    gain.connect(state.audio.masterGain);
+
+    noise.start();
+    registerAmbientNode(noise);
+    registerAmbientNode(gain);
+}
+
+function createChantsSound(ctx) {
+    const now = ctx.currentTime;
+    const baseGain = ctx.createGain();
+    baseGain.gain.value = 0.5; // Louder chants
+    baseGain.connect(state.audio.masterGain);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 800; // Let more through
+    filter.connect(baseGain);
+
+    const drone = ctx.createOscillator();
+    drone.type = 'sawtooth';
+    drone.frequency.value = 65.41; // C2 drone
+
+    const droneGain = ctx.createGain();
+    droneGain.gain.value = 0.3;
+
+    drone.connect(droneGain);
+    droneGain.connect(filter);
+    drone.start(now);
+
+    registerAmbientNode(drone);
+    registerAmbientNode(droneGain);
+    registerAmbientNode(filter);
+    registerAmbientNode(baseGain);
+}
+
+function stopAmbientSound() {
+    // Stop all registered ambient nodes (Audio elements and source nodes)
+    if (state.audio.ambientNodes && state.audio.ambientNodes.length > 0) {
         state.audio.ambientNodes.forEach(node => {
-            if (!node) return;
             try {
-                if (typeof node.stop === 'function') {
-                    node.stop();
-                }
-            } catch (e) {
-                // Node already stopped
-            }
+                if (node.stop) node.stop();
+            } catch (e) { /* ignore */ }
             try {
-                if (typeof node.disconnect === 'function') {
-                    node.disconnect();
-                }
-            } catch (e) {
-                // Node already disconnected
-            }
+                if (node.disconnect) node.disconnect();
+            } catch (e) { /* ignore */ }
         });
         state.audio.ambientNodes = [];
     }
@@ -992,307 +1264,6 @@ function registerAmbientNode(node) {
     state.audio.ambientNodes.push(node);
 }
 
-function createRainSound(ctx) {
-    const bufferSize = 2 * ctx.sampleRate;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-    }
-    
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    noise.loop = true;
-    
-    // Bandpass filter for rain-like sound
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 1000;
-    filter.Q.value = 0.5;
-    
-    // Highpass to remove rumble
-    const highpass = ctx.createBiquadFilter();
-    highpass.type = 'highpass';
-    highpass.frequency.value = 200;
-    
-    const gain = ctx.createGain();
-    gain.gain.value = 0.15;
-    
-    noise.connect(filter);
-    filter.connect(highpass);
-    highpass.connect(gain);
-    gain.connect(state.audio.masterGain);
-    
-    noise.start();
-    state.audio.ambientNode = noise;
-    registerAmbientNode(noise);
-    registerAmbientNode(filter);
-    registerAmbientNode(highpass);
-    registerAmbientNode(gain);
-}
-
-function createWavesSound(ctx) {
-    const bufferSize = 2 * ctx.sampleRate;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-    }
-    
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    noise.loop = true;
-    
-    // Lowpass filter for ocean-like sound
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 420;
-    filter.Q.value = 0.8;
-    
-    // LFO to modulate volume (wave motion)
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.type = 'sine';
-    lfo.frequency.value = 0.08; // Slow wave rhythm
-    lfoGain.gain.value = 0.12;
-    
-    const gain = ctx.createGain();
-    gain.gain.value = 0.32;
-    
-    lfo.connect(lfoGain);
-    lfoGain.connect(gain.gain);
-    
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(state.audio.masterGain);
-    
-    noise.start();
-    lfo.start();
-    state.audio.ambientNode = noise;
-    registerAmbientNode(noise);
-    registerAmbientNode(lfo);
-    registerAmbientNode(lfoGain);
-    registerAmbientNode(filter);
-    registerAmbientNode(gain);
-}
-
-function createForestSound(ctx) {
-    // Base ambient noise (wind through leaves)
-    const bufferSize = 2 * ctx.sampleRate;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-    }
-    
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    noise.loop = true;
-    
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 1600;
-    filter.Q.value = 0.7;
-    
-    const gain = ctx.createGain();
-    gain.gain.value = 0.12;
-    
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(state.audio.masterGain);
-    
-    noise.start();
-    state.audio.ambientNode = noise;
-    registerAmbientNode(noise);
-    registerAmbientNode(filter);
-    registerAmbientNode(gain);
-    
-    // Bird chirps (occasional)
-    scheduleBirdChirps(ctx);
-}
-
-function scheduleBirdChirps(ctx) {
-    if (!state.audio.isAmbientPlaying || state.audio.ambientSound !== 'forest') return;
-    
-    const delay = 2000 + Math.random() * 5000; // Random delay between chirps
-    
-    setTimeout(() => {
-        if (state.audio.isAmbientPlaying && state.audio.ambientSound === 'forest') {
-            playBirdChirp(ctx);
-            scheduleBirdChirps(ctx);
-        }
-    }, delay);
-}
-
-function playBirdChirp(ctx) {
-    const now = ctx.currentTime;
-    const baseFreq = 2000 + Math.random() * 2000;
-    
-    for (let i = 0; i < 3; i++) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(baseFreq + i * 200, now + i * 0.1);
-        osc.frequency.exponentialRampToValueAtTime(baseFreq + i * 200 + 500, now + i * 0.1 + 0.05);
-        osc.frequency.exponentialRampToValueAtTime(baseFreq + i * 200, now + i * 0.1 + 0.1);
-        
-        gain.gain.setValueAtTime(0, now + i * 0.1);
-        gain.gain.linearRampToValueAtTime(0.06, now + i * 0.1 + 0.02);
-        gain.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.1);
-        
-        osc.connect(gain);
-        gain.connect(state.audio.masterGain);
-        
-        osc.start(now + i * 0.1);
-        osc.stop(now + i * 0.1 + 0.15);
-    }
-}
-
-function createWindSound(ctx) {
-    const bufferSize = 2 * ctx.sampleRate;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-    }
-    
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    noise.loop = true;
-    
-    // Multiple bandpass filters for wind character
-    const filter1 = ctx.createBiquadFilter();
-    filter1.type = 'bandpass';
-    filter1.frequency.value = 240;
-    filter1.Q.value = 1.4;
-    
-    const filter2 = ctx.createBiquadFilter();
-    filter2.type = 'bandpass';
-    filter2.frequency.value = 600;
-    filter2.Q.value = 0.9;
-    
-    // LFO for wind gusts
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.type = 'sine';
-    lfo.frequency.value = 0.04;
-    lfoGain.gain.value = 260;
-    lfo.connect(lfoGain);
-    lfoGain.connect(filter1.frequency);
-    
-    const gain = ctx.createGain();
-    gain.gain.value = 0.18;
-    
-    noise.connect(filter1);
-    filter1.connect(filter2);
-    filter2.connect(gain);
-    gain.connect(state.audio.masterGain);
-    
-    noise.start();
-    lfo.start();
-    state.audio.ambientNode = noise;
-    registerAmbientNode(noise);
-    registerAmbientNode(lfo);
-    registerAmbientNode(lfoGain);
-    registerAmbientNode(filter1);
-    registerAmbientNode(filter2);
-    registerAmbientNode(gain);
-}
-
-function createZenMusic(ctx) {
-    const now = ctx.currentTime;
-
-    const baseGain = ctx.createGain();
-    baseGain.gain.value = 0.14;
-    baseGain.connect(state.audio.masterGain);
-
-    const lowpass = ctx.createBiquadFilter();
-    lowpass.type = 'lowpass';
-    lowpass.frequency.value = 1200;
-    lowpass.Q.value = 0.7;
-    lowpass.connect(baseGain);
-
-    const reverbGain = ctx.createGain();
-    reverbGain.gain.value = 0.35;
-
-    // Simple delay for spaciousness
-    const delay = ctx.createDelay(2.0);
-    delay.delayTime.value = 0.45;
-    const feedback = ctx.createGain();
-    feedback.gain.value = 0.25;
-    delay.connect(feedback);
-    feedback.connect(delay);
-    delay.connect(reverbGain);
-    reverbGain.connect(baseGain);
-
-    const chord = [220, 277.18, 329.63, 392.0];
-
-    chord.forEach((freq, index) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = index % 2 === 0 ? 'sine' : 'triangle';
-        osc.frequency.setValueAtTime(freq, now);
-
-        gain.gain.setValueAtTime(0.0, now);
-        gain.gain.linearRampToValueAtTime(0.08, now + 2.5);
-        gain.gain.linearRampToValueAtTime(0.04, now + 6);
-
-        osc.connect(gain);
-        gain.connect(lowpass);
-        gain.connect(delay);
-
-        osc.start(now);
-        registerAmbientNode(osc);
-        registerAmbientNode(gain);
-    });
-
-    const melodyScale = [392, 440, 494, 523.25, 587.33, 659.25];
-    const melody = ctx.createOscillator();
-    const melodyGain = ctx.createGain();
-    melody.type = 'sine';
-    melodyGain.gain.value = 0.05;
-    melody.connect(melodyGain);
-    melodyGain.connect(lowpass);
-
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.frequency.value = 0.12;
-    lfoGain.gain.value = 6;
-    lfo.connect(lfoGain);
-    lfoGain.connect(melody.frequency);
-
-    melody.start(now);
-    lfo.start(now);
-
-    registerAmbientNode(melody);
-    registerAmbientNode(melodyGain);
-    registerAmbientNode(lfo);
-    registerAmbientNode(lfoGain);
-    registerAmbientNode(lowpass);
-    registerAmbientNode(delay);
-    registerAmbientNode(feedback);
-    registerAmbientNode(reverbGain);
-    registerAmbientNode(baseGain);
-
-    let step = 0;
-    const sequence = () => {
-        if (!state.audio.isAmbientPlaying || state.audio.ambientSound !== 'zen') return;
-
-        const target = melodyScale[step % melodyScale.length];
-        melody.frequency.setValueAtTime(target, ctx.currentTime);
-        step += Math.random() > 0.6 ? 2 : 1;
-
-        setTimeout(sequence, 1800 + Math.random() * 1200);
-    };
-
-    sequence();
-}
-
 // =============================================
 // Breathing System
 // =============================================
@@ -1300,7 +1271,7 @@ function createZenMusic(ctx) {
 function openBreathingModal() {
     DOM.breathingModal.classList.remove('hidden');
     state.breathing.pattern = DOM.breathingPatternSelect.value;
-    
+
     // Optionally play breathing intro guidance
     if (typeof guidedState !== 'undefined' && guidedState.breathingGuidanceEnabled) {
         if (typeof playBreathingIntro === 'function') {
@@ -1312,6 +1283,10 @@ function openBreathingModal() {
 function closeBreathingModal() {
     DOM.breathingModal.classList.add('hidden');
     stopBreathingExercise();
+    // Ensure the breathing circle is fully cleared so it does not linger on the main screen
+    if (DOM.breathingCircle) {
+        DOM.breathingCircle.classList.remove('active', 'inhale', 'exhale', 'hold');
+    }
 }
 
 function toggleBreathingExercise() {
@@ -1336,7 +1311,7 @@ function stopBreathingExercise() {
     DOM.breathCircleLarge.className = 'breath-circle-large';
     DOM.breathInstruction.textContent = 'Ready';
     DOM.breathCounter.textContent = '';
-    
+
     if (state.breathing.intervalId) {
         clearTimeout(state.breathing.intervalId);
         state.breathing.intervalId = null;
@@ -1345,41 +1320,41 @@ function stopBreathingExercise() {
 
 function runBreathingCycle() {
     if (!state.breathing.isActive) return;
-    
+
     const pattern = parseBreathingPattern(state.breathing.pattern);
     const phases = pattern.phases;
     let phaseIndex = 0;
-    
+
     const runPhase = () => {
         if (!state.breathing.isActive) return;
-        
+
         const phase = phases[phaseIndex];
         state.breathing.phase = phase.name;
-        
+
         // Update UI
         DOM.breathCircleLarge.className = `breath-circle-large ${phase.name}`;
         DOM.breathInstruction.textContent = phase.label;
-        
+
         // Update visual breathing with phase sync
         if (typeof updateBreathingVisualsWithPhase === 'function') {
             updateBreathingVisualsWithPhase(phase.name, 0.5);
         }
-        
+
         // Play guided phase cue
         if (typeof playBreathingPhaseGuidance === 'function') {
             playBreathingPhaseGuidance(state.breathing.pattern, phase.name).catch(e => console.log('Guidance error:', e));
         }
-        
+
         // Countdown
         let count = phase.duration;
         DOM.breathCounter.textContent = count;
-        
+
         // Update transition duration
         DOM.breathCircleLarge.style.transitionDuration = `${phase.duration}s`;
-        
+
         const countDown = () => {
             if (!state.breathing.isActive) return;
-            
+
             count--;
             if (count > 0) {
                 DOM.breathCounter.textContent = count;
@@ -1394,16 +1369,16 @@ function runBreathingCycle() {
                 state.breathing.intervalId = setTimeout(runPhase, 100);
             }
         };
-        
+
         state.breathing.intervalId = setTimeout(countDown, 1000);
     };
-    
+
     runPhase();
 }
 
 function parseBreathingPattern(pattern) {
     const parts = pattern.split('-').map(Number);
-    
+
     if (parts.length === 2) {
         // Simple pattern: inhale-exhale
         return {
@@ -1432,7 +1407,7 @@ function parseBreathingPattern(pattern) {
             ]
         };
     }
-    
+
     // Default fallback
     return {
         phases: [
@@ -1445,7 +1420,7 @@ function parseBreathingPattern(pattern) {
 // Inline breathing (on main timer screen)
 function startInlineBreathing() {
     if (state.breathing.isActive) return;
-    
+
     state.breathing.isActive = true;
     state.breathing.pattern = state.settings.breathingPattern;
     DOM.breathingCircle.classList.add('active');
@@ -1456,7 +1431,7 @@ function stopInlineBreathing() {
     state.breathing.isActive = false;
     DOM.breathingCircle.classList.remove('active', 'inhale', 'hold', 'exhale');
     DOM.breathText.textContent = 'Breathe';
-    
+
     if (state.breathing.intervalId) {
         clearTimeout(state.breathing.intervalId);
         state.breathing.intervalId = null;
@@ -1465,20 +1440,20 @@ function stopInlineBreathing() {
 
 function runInlineBreathingCycle() {
     if (!state.breathing.isActive) return;
-    
+
     const pattern = parseBreathingPattern(state.breathing.pattern);
     const phases = pattern.phases;
     let phaseIndex = 0;
-    
+
     const runPhase = () => {
         if (!state.breathing.isActive) return;
-        
+
         const phase = phases[phaseIndex];
-        
+
         // Update inline breathing circle
         DOM.breathingCircle.className = `breathing-circle active ${phase.name}`;
         DOM.breathText.textContent = phase.label;
-        
+
         // Move to next phase after duration
         state.breathing.intervalId = setTimeout(() => {
             phaseIndex++;
@@ -1488,7 +1463,7 @@ function runInlineBreathingCycle() {
             runPhase();
         }, phase.duration * 1000);
     };
-    
+
     runPhase();
 }
 
@@ -1500,8 +1475,18 @@ function toggleFocusMode() {
     state.focusMode = !state.focusMode;
     document.body.classList.toggle('focus-mode', state.focusMode);
     DOM.focusModeBtn.classList.toggle('active', state.focusMode);
-    if (DOM.focusModeExit) {
-        DOM.focusModeExit.classList.toggle('hidden', !state.focusMode);
+
+    const focusHint = document.getElementById('focusHint');
+    if (state.focusMode) {
+        if (focusHint) focusHint.style.opacity = '1';
+        // Auto-hide the hint after 4 seconds
+        setTimeout(() => {
+            if (focusHint && state.focusMode) {
+                focusHint.style.opacity = '0';
+            }
+        }, 4000);
+    } else {
+        if (focusHint) focusHint.style.opacity = '0';
     }
 }
 
@@ -1513,11 +1498,11 @@ function updateHistoryStats() {
     const totalSessions = state.sessions.length;
     const totalMinutes = Math.floor(state.sessions.reduce((sum, s) => sum + s.duration, 0) / 60);
     const streak = calculateStreak();
-    
+
     DOM.totalSessions.textContent = totalSessions;
     DOM.totalMinutes.textContent = totalMinutes;
     DOM.currentStreak.textContent = streak;
-    
+
     // Also update mini stats widget
     updateMiniStats();
 
@@ -1529,11 +1514,11 @@ function updateHistoryStats() {
 
 function calculateStreak() {
     if (state.sessions.length === 0) return 0;
-    
+
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Group sessions by date
     const sessionDates = new Set();
     state.sessions.forEach(s => {
@@ -1541,10 +1526,10 @@ function calculateStreak() {
         date.setHours(0, 0, 0, 0);
         sessionDates.add(date.toDateString());
     });
-    
+
     // Count consecutive days
     let checkDate = new Date(today);
-    
+
     // First check if there's a session today or yesterday
     if (!sessionDates.has(checkDate.toDateString())) {
         checkDate.setDate(checkDate.getDate() - 1);
@@ -1552,13 +1537,13 @@ function calculateStreak() {
             return 0;
         }
     }
-    
+
     // Count backwards
     while (sessionDates.has(checkDate.toDateString())) {
         streak++;
         checkDate.setDate(checkDate.getDate() - 1);
     }
-    
+
     return streak;
 }
 
@@ -1567,17 +1552,17 @@ function renderHistory() {
         DOM.historyList.innerHTML = '<p class="history-empty">No sessions yet. Start meditating!</p>';
         return;
     }
-    
+
     DOM.historyList.innerHTML = state.sessions.slice(0, 50).map(session => {
         const date = new Date(session.date);
-        const dateStr = date.toLocaleDateString('en-US', { 
-            month: 'short', 
+        const dateStr = date.toLocaleDateString('en-US', {
+            month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
         });
         const durationStr = formatTime(session.duration);
-        
+
         return `
             <div class="history-item">
                 <div>
@@ -1593,7 +1578,7 @@ function renderHistory() {
 function clearHistory() {
     // Show confirmation toast with custom buttons
     const confirmed = confirm('Are you sure you want to clear all session history?');
-    
+
     if (confirmed) {
         state.sessions = [];
         saveSessions();
@@ -1613,7 +1598,7 @@ function setDailyQuote() {
     const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
     const quoteIndex = dayOfYear % quotes.length;
     const quote = quotes[quoteIndex];
-    
+
     DOM.dailyQuote.textContent = `"${quote.text}"`;
     DOM.quoteAuthor.textContent = `— ${quote.author}`;
 }
@@ -1632,7 +1617,7 @@ function sendNotification(title, body) {
     if (!state.settings.notifications) return;
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
-    
+
     try {
         new Notification(title, {
             body,
@@ -1653,10 +1638,10 @@ function showCompletionOverlay(intention) {
     const duration = state.timer.originalDuration;
     const minutes = Math.floor(duration / 60);
     const message = completionMessages[Math.floor(Math.random() * completionMessages.length)];
-    
+
     DOM.completeDuration.textContent = `${minutes} minute${minutes !== 1 ? 's' : ''} of mindfulness`;
     DOM.completeMessage.textContent = message;
-    
+
     // Show intention if it exists
     if (intention && DOM.completeIntention && DOM.completeIntentionText) {
         DOM.completeIntentionText.textContent = `"${intention}"`;
@@ -1664,7 +1649,7 @@ function showCompletionOverlay(intention) {
     } else if (DOM.completeIntention) {
         DOM.completeIntention.classList.add('hidden');
     }
-    
+
     DOM.completeOverlay.classList.remove('hidden');
 }
 
@@ -1675,7 +1660,7 @@ function showCompletionOverlay(intention) {
 function toggleSidebarBreathingGuide() {
     const content = DOM.breathingGuideContent;
     const toggle = DOM.breathingGuideToggle;
-    
+
     if (content.classList.contains('hidden')) {
         content.classList.remove('hidden');
         toggle.classList.add('active');
@@ -1713,7 +1698,7 @@ function stopSidebarBreathingExercise() {
     DOM.breathStartBtnSmall.textContent = 'Start';
     DOM.breathCircleSmall.className = 'breath-circle-small';
     DOM.breathInstructionSmall.textContent = 'Ready';
-    
+
     if (state.breathing.intervalId) {
         clearTimeout(state.breathing.intervalId);
         state.breathing.intervalId = null;
@@ -1722,24 +1707,24 @@ function stopSidebarBreathingExercise() {
 
 function runSidebarBreathingCycle() {
     if (!state.breathing.isActive || !state.breathing.usingSidebar) return;
-    
+
     const pattern = parseBreathingPattern(state.breathing.pattern);
     const phases = pattern.phases;
     let phaseIndex = 0;
-    
+
     const runPhase = () => {
         if (!state.breathing.isActive || !state.breathing.usingSidebar) return;
-        
+
         const phase = phases[phaseIndex];
         state.breathing.phase = phase.name;
-        
+
         // Update UI
         DOM.breathCircleSmall.className = `breath-circle-small ${phase.name}`;
         DOM.breathInstructionSmall.textContent = phase.label;
-        
+
         // Update transition duration
         DOM.breathCircleSmall.style.transitionDuration = `${phase.duration}s`;
-        
+
         // Move to next phase after duration
         state.breathing.intervalId = setTimeout(() => {
             phaseIndex++;
@@ -1750,7 +1735,7 @@ function runSidebarBreathingCycle() {
             runPhase();
         }, phase.duration * 1000);
     };
-    
+
     runPhase();
 }
 
@@ -1795,7 +1780,7 @@ if ('serviceWorker' in navigator) {
 function initAccordions() {
     // Load accordion states from localStorage
     const soundSettingsState = safeGetRawItem(STORAGE_KEYS.ACCORDION_PREFIX + 'soundSettings', '');
-    
+
     // Sound settings accordion starts collapsed by default
     if (soundSettingsState === 'open') {
         openAccordion('soundSettingsToggle', 'soundSettingsContent');
@@ -1805,11 +1790,11 @@ function initAccordions() {
 function toggleAccordion(toggleId, contentId, storageKey) {
     const toggle = document.getElementById(toggleId);
     const content = document.getElementById(contentId);
-    
+
     if (!toggle || !content) return;
-    
+
     const isOpen = toggle.classList.contains('open');
-    
+
     if (isOpen) {
         closeAccordion(toggleId, contentId);
         safeSetRawItem(STORAGE_KEYS.ACCORDION_PREFIX + storageKey, 'closed');
@@ -1822,9 +1807,9 @@ function toggleAccordion(toggleId, contentId, storageKey) {
 function openAccordion(toggleId, contentId) {
     const toggle = document.getElementById(toggleId);
     const content = document.getElementById(contentId);
-    
+
     if (!toggle || !content) return;
-    
+
     toggle.classList.add('open');
     content.classList.remove('hidden');
 }
@@ -1832,9 +1817,9 @@ function openAccordion(toggleId, contentId) {
 function closeAccordion(toggleId, contentId) {
     const toggle = document.getElementById(toggleId);
     const content = document.getElementById(contentId);
-    
+
     if (!toggle || !content) return;
-    
+
     toggle.classList.remove('open');
     content.classList.add('hidden');
 }
@@ -1845,20 +1830,20 @@ function closeAccordion(toggleId, contentId) {
 
 function updateMiniStats() {
     if (!DOM.miniStatsWidget) return;
-    
+
     const todayMinutes = getTodayMinutes();
     const streak = calculateStreak();
     const totalSessions = state.sessions.length;
     const totalMinutes = Math.floor(
         state.sessions.reduce((sum, s) => sum + s.duration, 0) / 60
     );
-    
+
     // Update mini stats display
     if (DOM.miniStatToday) DOM.miniStatToday.textContent = todayMinutes;
     if (DOM.miniStatStreak) DOM.miniStatStreak.textContent = streak;
     if (DOM.miniStatTotalSessions) DOM.miniStatTotalSessions.textContent = totalSessions;
     if (DOM.miniStatTotalMinutes) DOM.miniStatTotalMinutes.textContent = totalMinutes;
-    
+
     // Show/hide widget based on whether there are sessions
     if (totalSessions > 0) {
         DOM.miniStatsWidget.style.display = 'block';
@@ -1878,9 +1863,9 @@ function getTodayMinutes() {
 
 function toggleMiniStatsExpanded() {
     if (!DOM.miniStatsWidget) return;
-    
+
     const isExpanded = DOM.miniStatsWidget.classList.contains('expanded');
-    
+
     if (isExpanded) {
         DOM.miniStatsWidget.classList.remove('expanded');
         if (DOM.miniStatsDetails) {
@@ -1903,58 +1888,58 @@ class ToastManager {
         this.container = document.getElementById('toastContainer');
         this.toasts = [];
     }
-    
+
     show(message, type = 'info', duration = 4000) {
         if (!this.container) return null;
-        
+
         const toast = this.createToast(message, type, duration);
         this.container.appendChild(toast);
         this.toasts.push(toast);
-        
+
         // Trigger entrance animation
         setTimeout(() => {
             toast.classList.add('show');
         }, 10);
-        
+
         // Auto-remove if duration specified
         if (duration > 0) {
             setTimeout(() => this.remove(toast), duration);
         }
-        
+
         return toast;
     }
-    
+
     createToast(message, type, duration) {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        
+
         const icons = {
             success: '✓',
             error: '✕',
             info: 'ⓘ',
             warning: '⚠'
         };
-        
+
         const icon = icons[type] || icons.info;
-        
+
         toast.innerHTML = `
             <div class="toast-icon">${icon}</div>
             <div class="toast-message">${message}</div>
             ${duration > 0 ? '<div class="toast-progress"></div>' : ''}
         `;
-        
+
         // Add click to dismiss
         toast.addEventListener('click', () => this.remove(toast));
-        
+
         return toast;
     }
-    
+
     remove(toast) {
         if (!toast || !toast.parentNode) return;
-        
+
         toast.classList.add('removing');
         toast.classList.remove('show');
-        
+
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.remove();
@@ -1962,7 +1947,7 @@ class ToastManager {
             this.toasts = this.toasts.filter(t => t !== toast);
         }, 300);
     }
-    
+
     clear() {
         this.toasts.forEach(toast => this.remove(toast));
     }
@@ -1978,12 +1963,12 @@ const toast = new ToastManager();
 class OrganicParticleSystem {
     constructor(canvas) {
         if (!canvas) return;
-        
+
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.particles = [];
         this.animationFrame = null;
-        
+
         this.options = {
             count: 15,
             minSize: 3,
@@ -1994,27 +1979,27 @@ class OrganicParticleSystem {
             minOpacity: 0.1,
             maxOpacity: 0.3
         };
-        
+
         this.resize();
         this.init();
-        
+
         // Bind resize handler
         this.resizeHandler = () => this.resize();
         window.addEventListener('resize', this.resizeHandler);
     }
-    
+
     resize() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
     }
-    
+
     init() {
         this.particles = [];
         for (let i = 0; i < this.options.count; i++) {
             this.particles.push(this.createParticle());
         }
     }
-    
+
     createParticle() {
         return {
             x: Math.random() * this.canvas.width,
@@ -2031,63 +2016,63 @@ class OrganicParticleSystem {
             offset: Array.from({ length: 8 }, () => Math.random() * Math.PI * 2)
         };
     }
-    
+
     random(min, max) {
         return Math.random() * (max - min) + min;
     }
-    
+
     drawBlobParticle(particle) {
         const ctx = this.ctx;
         const points = particle.blobPoints;
         const radius = particle.size;
-        
+
         ctx.save();
         ctx.translate(particle.x, particle.y);
         ctx.rotate(particle.rotation);
-        
+
         ctx.beginPath();
-        
+
         for (let i = 0; i <= points; i++) {
             const angle = (i / points) * Math.PI * 2;
             const nextAngle = ((i + 1) / points) * Math.PI * 2;
-            
+
             // Add organic variation to radius
             const variation = Math.sin(particle.offset[i % 8] + Date.now() * 0.001) * particle.blobVariation;
             const r = radius + variation;
             const nextR = radius + Math.sin(particle.offset[(i + 1) % 8] + Date.now() * 0.001) * particle.blobVariation;
-            
+
             const x = Math.cos(angle) * r;
             const y = Math.sin(angle) * r;
             const nextX = Math.cos(nextAngle) * nextR;
             const nextY = Math.sin(nextAngle) * nextR;
-            
+
             if (i === 0) {
                 ctx.moveTo(x, y);
             }
-            
+
             // Use quadratic curves for smooth organic shapes
             const cpX = (x + nextX) / 2;
             const cpY = (y + nextY) / 2;
             ctx.quadraticCurveTo(x, y, cpX, cpY);
         }
-        
+
         ctx.closePath();
-        
+
         // Apply color and opacity
         ctx.fillStyle = particle.color;
         ctx.globalAlpha = particle.opacity;
         ctx.fill();
-        
+
         ctx.restore();
     }
-    
+
     update() {
         this.particles.forEach(particle => {
             // Update position
             particle.x += particle.speedX;
             particle.y += particle.speedY;
             particle.rotation += particle.rotationSpeed;
-            
+
             // Wrap around screen edges
             if (particle.x < -particle.size * 2) {
                 particle.x = this.canvas.width + particle.size * 2;
@@ -2103,31 +2088,31 @@ class OrganicParticleSystem {
             }
         });
     }
-    
+
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.particles.forEach(particle => this.drawBlobParticle(particle));
     }
-    
+
     animate() {
         this.update();
         this.draw();
         this.animationFrame = requestAnimationFrame(() => this.animate());
     }
-    
+
     start() {
         if (!this.animationFrame) {
             this.animate();
         }
     }
-    
+
     stop() {
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
             this.animationFrame = null;
         }
     }
-    
+
     destroy() {
         this.stop();
         window.removeEventListener('resize', this.resizeHandler);
@@ -2139,7 +2124,7 @@ let particleSystem = null;
 
 function initParticleSystem() {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    
+
     if (!prefersReducedMotion && DOM.particleCanvas) {
         particleSystem = new OrganicParticleSystem(DOM.particleCanvas);
         particleSystem.start();
@@ -2152,12 +2137,12 @@ function initParticleSystem() {
 
 function updateCharCounter() {
     if (!DOM.intentionInput || !DOM.charCounter) return;
-    
+
     const length = DOM.intentionInput.value.length;
     const maxLength = DOM.intentionInput.maxLength;
-    
+
     DOM.charCounter.textContent = `${length}/${maxLength}`;
-    
+
     // Warning color when near limit
     if (length >= maxLength * 0.9) {
         DOM.charCounter.classList.add('warning');
@@ -2168,9 +2153,9 @@ function updateCharCounter() {
 
 function showIntentionDuringMeditation() {
     if (!DOM.intentionDisplay || !DOM.intentionText) return;
-    
+
     const intention = DOM.intentionInput.value.trim();
-    
+
     if (intention) {
         DOM.intentionText.textContent = `"${intention}"`;
         DOM.intentionDisplay.classList.remove('hidden');

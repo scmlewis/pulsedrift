@@ -15,7 +15,9 @@ const guidedState = {
     mantraText: 'I am calm and present',
     lastMantraTime: 0,
     mantraInterval: 5 * 60 * 1000, // Default: every 5 minutes
-    breathingGuidanceEnabled: true
+    breathingGuidanceEnabled: true,
+    voiceURI: 'default',
+    voiceRate: 1.0
 };
 
 // =============================================
@@ -92,14 +94,19 @@ function speakText(text, options = {}) {
         }
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = options.rate || 0.95; // Slightly slower for calm effect
+        utterance.rate = (options.rate || 0.95) * (guidedState.voiceRate || 1.0); // Apply custom speed multiplier
         utterance.pitch = options.pitch || 1;
         utterance.volume = options.volume || 0.8;
 
-        // Auto-select a pleasant voice (female voices tend to be calmer)
         const voices = window.speechSynthesis.getVoices();
         if (voices.length > 0) {
-            const preferredVoice = voices.find(v => v.name.includes('Google UK Female') || v.name.includes('Samantha') || v.lang.includes('en')) || voices[0];
+            let preferredVoice;
+            if (guidedState.voiceURI && guidedState.voiceURI !== 'default') {
+                preferredVoice = voices.find(v => v.voiceURI === guidedState.voiceURI);
+            }
+            if (!preferredVoice) {
+                preferredVoice = voices.find(v => v.name.includes('Google UK Female') || v.name.includes('Samantha') || v.lang.includes('en')) || voices[0];
+            }
             utterance.voice = preferredVoice;
         }
 
@@ -417,10 +424,30 @@ function showSessionReflectionPrompt(data = {}) {
 // =============================================
 
 function initGuidedFeatures() {
-    // Ensure voices are loaded for TTS
-    window.speechSynthesis.onvoiceschanged = () => {
+    const voiceSelect = document.getElementById('voiceSelect');
+    const voiceRateSlider = document.getElementById('voiceRateSlider');
+
+    const populateVoices = () => {
         const voices = window.speechSynthesis.getVoices();
-        console.log('Available voices:', voices.length);
+        if (voices.length > 0 && voiceSelect) {
+            const currentVal = voiceSelect.value;
+            voiceSelect.innerHTML = '<option value="default">Default System Voice</option>';
+            voices.forEach(voice => {
+                const option = document.createElement('option');
+                option.value = voice.voiceURI;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                voiceSelect.appendChild(option);
+            });
+            if (guidedState.voiceURI) {
+                voiceSelect.value = guidedState.voiceURI;
+            }
+        }
+    };
+
+    // Ensure voices are loaded for TTS
+    populateVoices();
+    window.speechSynthesis.onvoiceschanged = () => {
+        populateVoices();
     };
 
     // Load guided settings from storage
@@ -428,10 +455,32 @@ function initGuidedFeatures() {
         breathingGuidanceEnabled: true,
         mantraEnabled: false,
         mantraText: 'I am calm and present',
-        mantraInterval: 5 * 60 * 1000
+        mantraInterval: 5 * 60 * 1000,
+        voiceURI: 'default',
+        voiceRate: 1.0
     });
 
     Object.assign(guidedState, guidedSettings);
+
+    if (voiceSelect) {
+        voiceSelect.value = guidedState.voiceURI || 'default';
+        voiceSelect.addEventListener('change', (e) => {
+            guidedState.voiceURI = e.target.value;
+            saveGuidedSettings();
+            speakText("Here is my new voice.", { volume: 0.6 });
+        });
+    }
+
+    if (voiceRateSlider) {
+        voiceRateSlider.value = (guidedState.voiceRate || 1.0) * 100;
+        voiceRateSlider.addEventListener('input', (e) => {
+            guidedState.voiceRate = parseInt(e.target.value) / 100;
+            saveGuidedSettings();
+        });
+        voiceRateSlider.addEventListener('change', () => {
+            speakText("Guidance speed updated.", { volume: 0.6 });
+        });
+    }
 }
 
 /**
@@ -440,9 +489,11 @@ function initGuidedFeatures() {
 function saveGuidedSettings() {
     const settings = {
         breathingGuidanceEnabled: guidedState.breathingGuidanceEnabled,
-        mantraEnabled: !!state.timer.mantraIntervalId,
+        mantraEnabled: !!(typeof state !== 'undefined' && state.timer && state.timer.mantraIntervalId),
         mantraText: guidedState.mantraText,
-        mantraInterval: guidedState.mantraInterval
+        mantraInterval: guidedState.mantraInterval,
+        voiceURI: guidedState.voiceURI,
+        voiceRate: guidedState.voiceRate
     };
     safeSetItem(STORAGE_KEYS.GUIDED_SETTINGS, settings);
 }

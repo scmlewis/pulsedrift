@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a2e">
-    <meta name="description" content="PulseDrift - A zen meditation timer with breathing exercises and mindfulness features">
+    <meta name="description"
+        content="PulseDrift - A zen meditation timer with breathing exercises and mindfulness features">
     <title>PulseDrift - Zen Meditation Timer</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
@@ -14,6 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <!-- Sand Pattern Overlay -->
     <div class="sand-pattern"></div>
@@ -24,43 +27,47 @@
         <header class="header">
             <div class="logo">
                 <svg class="lotus-icon" viewBox="0 0 100 100" width="40" height="40">
-                    <path class="lotus-petal" d="M50 10 Q60 30 50 50 Q40 30 50 10" fill="currentColor" opacity="0.9"/>
-                    <path class="lotus-petal" d="M30 25 Q45 35 50 50 Q35 40 30 25" fill="currentColor" opacity="0.8"/>
-                    <path class="lotus-petal" d="M70 25 Q55 35 50 50 Q65 40 70 25" fill="currentColor" opacity="0.8"/>
-                    <path class="lotus-petal" d="M20 45 Q40 45 50 50 Q35 55 20 45" fill="currentColor" opacity="0.7"/>
-                    <path class="lotus-petal" d="M80 45 Q60 45 50 50 Q65 55 80 45" fill="currentColor" opacity="0.7"/>
-                    <ellipse cx="50" cy="55" rx="15" ry="8" fill="currentColor" opacity="0.6"/>
+                    <path class="lotus-petal" d="M50 10 Q60 30 50 50 Q40 30 50 10" fill="currentColor" opacity="0.9" />
+                    <path class="lotus-petal" d="M30 25 Q45 35 50 50 Q35 40 30 25" fill="currentColor" opacity="0.8" />
+                    <path class="lotus-petal" d="M70 25 Q55 35 50 50 Q65 40 70 25" fill="currentColor" opacity="0.8" />
+                    <path class="lotus-petal" d="M20 45 Q40 45 50 50 Q35 55 20 45" fill="currentColor" opacity="0.7" />
+                    <path class="lotus-petal" d="M80 45 Q60 45 50 50 Q65 55 80 45" fill="currentColor" opacity="0.7" />
+                    <ellipse cx="50" cy="55" rx="15" ry="8" fill="currentColor" opacity="0.6" />
                 </svg>
                 <h1>PulseDrift</h1>
             </div>
             <div class="header-actions">
                 <button class="icon-btn" id="focusModeBtn" title="Focus Mode (F)">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <circle cx="12" cy="12" r="3"/>
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="3" />
                     </svg>
                 </button>
                 <button class="icon-btn" id="historyBtn" title="Session History">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
                     </svg>
                 </button>
                 <button class="icon-btn" id="settingsBtn" title="Settings">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M12 1v6m0 6v10M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h10M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M12 1v6m0 6v10M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h10M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24" />
                     </svg>
                 </button>
             </div>
-            
+
             <!-- Focus Mode Exit Button (visible only in focus mode) -->
-            <button class="focus-mode-exit hidden" id="focusModeExit" title="Exit Focus Mode">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-            </button>
+            <div class="focus-mode-exit-container" id="focusModeExitContainer">
+                <span class="focus-hint" id="focusHint">Press Esc or tap to exit</span>
+                <button class="focus-mode-exit" id="focusModeExit" title="Exit Focus Mode">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- Desktop Two-Column Layout Wrapper -->
@@ -77,16 +84,19 @@
                         <div class="mini-stat">
                             <span class="mini-stat-icon" aria-hidden="true">
                                 <svg class="mini-stat-icon-svg" viewBox="0 0 24 24">
-                                    <path d="M12 3c3 3 4 5 4 8a4 4 0 1 1-8 0c0-2 1-4 4-8Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
-                                    <path d="M12 12c1 1 2 2 2 3a2 2 0 1 1-4 0c0-1 1-2 2-3Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                                    <path d="M12 3c3 3 4 5 4 8a4 4 0 1 1-8 0c0-2 1-4 4-8Z" fill="none"
+                                        stroke="currentColor" stroke-width="1.6" />
+                                    <path d="M12 12c1 1 2 2 2 3a2 2 0 1 1-4 0c0-1 1-2 2-3Z" fill="none"
+                                        stroke="currentColor" stroke-width="1.6" />
                                 </svg>
                             </span>
                             <span class="mini-stat-value" id="miniStatStreak">0</span>
                         </div>
                     </div>
                     <button class="mini-stats-expand" id="miniStatsExpand" title="View detailed stats">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"/>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
                     <!-- Expanded details (hidden by default) -->
@@ -104,7 +114,8 @@
 
                 <!-- Daily Quote -->
                 <section class="quote-section" id="quoteSection">
-                    <p class="daily-quote" id="dailyQuote">"The mind is like water. When it's turbulent, it's difficult to see. When it's calm, everything becomes clear."</p>
+                    <p class="daily-quote" id="dailyQuote">"The mind is like water. When it's turbulent, it's difficult
+                        to see. When it's calm, everything becomes clear."</p>
                     <span class="quote-author" id="quoteAuthor">— Prasad Mahes</span>
                 </section>
 
@@ -129,13 +140,15 @@
                 <!-- Integrated Breathing Guide (Desktop) -->
                 <section class="breathing-guide-sidebar" id="breathingGuideSidebar">
                     <button class="breathing-guide-toggle" id="breathingGuideToggle">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 8v8M8 12h8"/>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
                         </svg>
                         <span>Breathing Guide</span>
-                        <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"/>
+                        <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
                     <div class="breathing-guide-content hidden" id="breathingGuideContent">
@@ -156,13 +169,16 @@
                 <!-- Intention Setting (MOVED UP - Higher Priority) -->
                 <section class="intention-section">
                     <label for="intentionInput" class="intention-label">
-                        <svg class="intention-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        <svg class="intention-icon" viewBox="0 0 24 24" width="18" height="18" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                         </svg>
                         Today's Intention
                     </label>
                     <div class="intention-input-wrapper">
-                        <input type="text" id="intentionInput" placeholder="Set your meditation intention..." maxlength="100">
+                        <input type="text" id="intentionInput" placeholder="Set your meditation intention..."
+                            maxlength="100">
                         <span class="char-counter" id="charCounter">0/100</span>
                     </div>
                 </section>
@@ -174,8 +190,9 @@
                 <div class="timer-container">
                     <div class="timer-ring">
                         <svg class="timer-svg" viewBox="0 0 200 200">
-                            <circle class="timer-track" cx="100" cy="100" r="90" fill="none" stroke-width="4"/>
-                            <circle class="timer-progress" id="timerProgress" cx="100" cy="100" r="90" fill="none" stroke-width="4" stroke-linecap="round"/>
+                            <circle class="timer-track" cx="100" cy="100" r="90" fill="none" stroke-width="4" />
+                            <circle class="timer-progress" id="timerProgress" cx="100" cy="100" r="90" fill="none"
+                                stroke-width="4" stroke-linecap="round" />
                         </svg>
                         <div class="timer-display">
                             <span class="timer-time" id="timerDisplay">10:00</span>
@@ -192,24 +209,26 @@
                 <!-- Timer Controls -->
                 <div class="controls">
                     <button class="control-btn secondary" id="resetBtn" title="Reset">
-                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                            <path d="M3 3v5h5"/>
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
                         </svg>
                     </button>
                     <button class="control-btn primary" id="startBtn" title="Start">
                         <svg class="play-icon" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
-                            <polygon points="5 3 19 12 5 21 5 3"/>
+                            <polygon points="5 3 19 12 5 21 5 3" />
                         </svg>
                         <svg class="pause-icon hidden" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
-                            <rect x="6" y="4" width="4" height="16"/>
-                            <rect x="14" y="4" width="4" height="16"/>
+                            <rect x="6" y="4" width="4" height="16" />
+                            <rect x="14" y="4" width="4" height="16" />
                         </svg>
                     </button>
                     <button class="control-btn secondary" id="breathingBtn" title="Breathing Guide">
-                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 8v8M8 12h8"/>
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
                         </svg>
                     </button>
                 </div>
@@ -235,7 +254,8 @@
                 <!-- Intention Display (shows during meditation) -->
                 <div class="intention-display hidden" id="intentionDisplay">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                     </svg>
                     <span id="intentionText"></span>
                 </div>
@@ -249,8 +269,8 @@
             <h2>Session History</h2>
             <button class="close-btn" id="closeHistoryBtn">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
             </button>
         </div>
@@ -268,7 +288,7 @@
                 <span class="stat-label">Day Streak</span>
             </div>
         </div>
-        
+
         <!-- Calendar Heatmap -->
         <div class="calendar-heatmap-section">
             <h3 class="heatmap-title">Your Meditation Journey</h3>
@@ -289,7 +309,8 @@
         <!-- Advanced Analytics -->
         <div class="analytics-section" id="analyticsSection">
             <h3 class="analytics-title">Weekly Insights</h3>
-            <p class="analytics-empty hidden" id="analyticsEmpty">No sessions yet. Complete a session to see insights.</p>
+            <p class="analytics-empty hidden" id="analyticsEmpty">No sessions yet. Complete a session to see insights.
+            </p>
             <div class="analytics-summary">
                 <div class="analytics-card">
                     <span class="analytics-label">Last 7 Days</span>
@@ -313,29 +334,29 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Import/Export Data -->
         <div class="data-actions">
             <button class="export-data-btn" id="exportDataBtn">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
                 Export Data
             </button>
             <button class="import-data-btn" id="importDataBtn">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 14 12 9 7 14"/>
-                    <line x1="12" y1="9" x2="12" y2="21"/>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 14 12 9 7 14" />
+                    <line x1="12" y1="9" x2="12" y2="21" />
                 </svg>
                 Import Data
             </button>
             <input type="file" id="importDataInput" class="hidden" accept="application/json">
         </div>
         <p class="data-help">Import will prompt to merge with existing data or replace it.</p>
-        
+
         <div class="history-list" id="historyList">
             <!-- Sessions will be populated here -->
         </div>
@@ -349,8 +370,8 @@
                 <h2>Settings</h2>
                 <button class="close-btn" id="closeSettingsBtn">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
             </div>
@@ -358,7 +379,7 @@
                 <!-- Audio Settings Section -->
                 <div class="setting-section">
                     <h2 class="setting-section-title">Audio Settings</h2>
-                    
+
                     <div class="setting-group">
                         <h3>Bell Sound</h3>
                         <p class="setting-desc">Choose your meditation bell</p>
@@ -369,7 +390,7 @@
                             <option value="silence">Silence</option>
                         </select>
                     </div>
-                    
+
                     <div class="setting-group">
                         <h3>Ambient Sound</h3>
                         <p class="setting-desc">Background ambience during meditation</p>
@@ -380,14 +401,17 @@
                             <option value="forest">Forest Birds</option>
                             <option value="wind">Gentle Wind</option>
                             <option value="zen">Zen Music</option>
+                            <option value="fire">Crackling Fire</option>
+                            <option value="brownNoise">Brown Noise</option>
+                            <option value="chants">Tibetan Chants</option>
                         </select>
                     </div>
-                    
+
                     <div class="setting-group">
                         <h3>Volume</h3>
                         <input type="range" id="volumeSlider" min="0" max="100" value="70" class="volume-slider">
                     </div>
-                    
+
                     <div class="setting-group">
                         <h3>Interval Bell</h3>
                         <p class="setting-desc">Play a gentle bell at regular intervals</p>
@@ -399,28 +423,41 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <!-- Session Templates Section -->
                 <div class="setting-section">
                     <h2 class="setting-section-title">Session Templates</h2>
-                    
+
                     <div class="templates-list" id="templatesList">
                         <!-- Templates will be populated here -->
                     </div>
                     <button class="save-template-btn" id="saveTemplateBtn">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                            <polyline points="17 21 17 13 7 13 7 21"/>
-                            <polyline points="7 3 7 8 15 8"/>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                            <polyline points="17 21 17 13 7 13 7 21" />
+                            <polyline points="7 3 7 8 15 8" />
                         </svg>
                         Save Current as Template
                     </button>
                 </div>
-                
+
                 <!-- Breathing Settings Section -->
                 <div class="setting-section">
-                    <h2 class="setting-section-title">Breathing Settings</h2>
-                    
+                    <h2 class="setting-section-title">Breathing & Guidance Settings</h2>
+
+                    <div class="setting-group">
+                        <h3>Voice Guide</h3>
+                        <select id="voiceSelect" class="sound-select">
+                            <option value="default">Default System Voice</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Guidance Speed</h3>
+                        <input type="range" id="voiceRateSlider" min="50" max="150" value="95" class="volume-slider">
+                    </div>
+
                     <div class="setting-group">
                         <h3>Breathing Pattern</h3>
                         <p class="setting-desc">Choose your preferred breathing exercise</p>
@@ -430,7 +467,7 @@
                             <option value="4-4-4-4">Box Breathing (4-4-4-4)</option>
                         </select>
                     </div>
-                    
+
                     <div class="setting-group">
                         <h3>Auto-start Breathing</h3>
                         <label class="toggle-label">
@@ -440,11 +477,11 @@
                         </label>
                     </div>
                 </div>
-                
+
                 <!-- App Settings Section -->
                 <div class="setting-section">
                     <h2 class="setting-section-title">App Settings</h2>
-                    
+
                     <div class="setting-group">
                         <h3>Notifications</h3>
                         <label class="toggle-label">
@@ -452,6 +489,17 @@
                             <span class="toggle-switch"></span>
                             Enable browser notifications
                         </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Theme</h3>
+                        <p class="setting-desc">Choose your visual aesthetic</p>
+                        <select id="themeSelect" class="sound-select">
+                            <option value="default">Default Dark</option>
+                            <option value="ocean">Deep Ocean</option>
+                            <option value="forest">Forest Canopy</option>
+                            <option value="sunset">Sunset Serenity</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -465,8 +513,8 @@
                 <h2>Breathing Guide</h2>
                 <button class="close-btn" id="closeBreathingBtn">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
             </div>
@@ -496,8 +544,8 @@
                 <h2>Save Session Template</h2>
                 <button class="close-btn" id="closeSaveTemplateBtn">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
             </div>
@@ -536,26 +584,28 @@
     <div class="complete-overlay hidden" id="completeOverlay">
         <div class="complete-content">
             <svg class="complete-lotus" viewBox="0 0 100 100" width="80" height="80">
-                <path class="lotus-petal" d="M50 10 Q60 30 50 50 Q40 30 50 10" fill="currentColor"/>
-                <path class="lotus-petal" d="M30 25 Q45 35 50 50 Q35 40 30 25" fill="currentColor"/>
-                <path class="lotus-petal" d="M70 25 Q55 35 50 50 Q65 40 70 25" fill="currentColor"/>
-                <path class="lotus-petal" d="M20 45 Q40 45 50 50 Q35 55 20 45" fill="currentColor"/>
-                <path class="lotus-petal" d="M80 45 Q60 45 50 50 Q65 55 80 45" fill="currentColor"/>
-                <ellipse cx="50" cy="55" rx="15" ry="8" fill="currentColor"/>
+                <path class="lotus-petal" d="M50 10 Q60 30 50 50 Q40 30 50 10" fill="currentColor" />
+                <path class="lotus-petal" d="M30 25 Q45 35 50 50 Q35 40 30 25" fill="currentColor" />
+                <path class="lotus-petal" d="M70 25 Q55 35 50 50 Q65 40 70 25" fill="currentColor" />
+                <path class="lotus-petal" d="M20 45 Q40 45 50 50 Q35 55 20 45" fill="currentColor" />
+                <path class="lotus-petal" d="M80 45 Q60 45 50 50 Q65 55 80 45" fill="currentColor" />
+                <ellipse cx="50" cy="55" rx="15" ry="8" fill="currentColor" />
             </svg>
             <h2>Session Complete</h2>
             <p class="complete-duration" id="completeDuration">10 minutes of mindfulness</p>
             <div class="complete-intention hidden" id="completeIntention">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    <path
+                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </svg>
                 <span id="completeIntentionText"></span>
             </div>
             <p class="complete-message" id="completeMessage">Well done. Carry this peace with you.</p>
-            
+
             <!-- Session Reflection Prompt (NEW) -->
-            <div class="reflection-prompt" id="reflectionPrompt" style="display:none;" role="region" aria-label="Reflection prompt"></div>
-            
+            <div class="reflection-prompt" id="reflectionPrompt" style="display:none;" role="region"
+                aria-label="Reflection prompt"></div>
+
             <!-- Achievement Badge (if milestone reached) -->
             <div class="achievement-badge hidden" id="achievementBadge">
                 <div class="achievement-icon" id="achievementIcon"></div>
@@ -564,54 +614,53 @@
                     <div class="achievement-desc" id="achievementDesc">10 sessions completed</div>
                 </div>
             </div>
-            
+
             <!-- Meditation Journal -->
             <div class="journal-section">
                 <label class="journal-label">How was your session?</label>
                 <div class="mood-selector" id="moodSelector">
                     <button class="mood-btn" data-mood="peaceful" title="Peaceful" aria-label="Peaceful">
                         <svg class="mood-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
-                            <circle cx="9" cy="10" r="1" fill="currentColor"/>
-                            <circle cx="15" cy="10" r="1" fill="currentColor"/>
-                            <path d="M8 15c1.2 1 2.6 1.5 4 1.5s2.8-.5 4-1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6" />
+                            <circle cx="9" cy="10" r="1" fill="currentColor" />
+                            <circle cx="15" cy="10" r="1" fill="currentColor" />
+                            <path d="M8 15c1.2 1 2.6 1.5 4 1.5s2.8-.5 4-1.5" fill="none" stroke="currentColor"
+                                stroke-width="1.6" stroke-linecap="round" />
                         </svg>
                     </button>
                     <button class="mood-btn" data-mood="focused" title="Focused" aria-label="Focused">
                         <svg class="mood-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
-                            <circle cx="9" cy="10" r="1" fill="currentColor"/>
-                            <circle cx="15" cy="10" r="1" fill="currentColor"/>
-                            <path d="M9 16h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6" />
+                            <circle cx="9" cy="10" r="1" fill="currentColor" />
+                            <circle cx="15" cy="10" r="1" fill="currentColor" />
+                            <path d="M9 16h6" fill="none" stroke="currentColor" stroke-width="1.6"
+                                stroke-linecap="round" />
                         </svg>
                     </button>
                     <button class="mood-btn" data-mood="neutral" title="Neutral" aria-label="Neutral">
                         <svg class="mood-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
-                            <circle cx="9" cy="10" r="1" fill="currentColor"/>
-                            <circle cx="15" cy="10" r="1" fill="currentColor"/>
-                            <path d="M8 15h8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6" />
+                            <circle cx="9" cy="10" r="1" fill="currentColor" />
+                            <circle cx="15" cy="10" r="1" fill="currentColor" />
+                            <path d="M8 15h8" fill="none" stroke="currentColor" stroke-width="1.6"
+                                stroke-linecap="round" />
                         </svg>
                     </button>
                     <button class="mood-btn" data-mood="restless" title="Restless" aria-label="Restless">
                         <svg class="mood-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
-                            <circle cx="9" cy="10" r="1" fill="currentColor"/>
-                            <circle cx="15" cy="10" r="1" fill="currentColor"/>
-                            <path d="M8.5 16c1.2-.8 2.4-1.2 3.5-1.2s2.3.4 3.5 1.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6" />
+                            <circle cx="9" cy="10" r="1" fill="currentColor" />
+                            <circle cx="15" cy="10" r="1" fill="currentColor" />
+                            <path d="M8.5 16c1.2-.8 2.4-1.2 3.5-1.2s2.3.4 3.5 1.2" fill="none" stroke="currentColor"
+                                stroke-width="1.6" stroke-linecap="round" />
                         </svg>
                     </button>
                 </div>
-                <textarea 
-                    id="journalNotes" 
-                    class="journal-textarea" 
-                    placeholder="Any insights or reflections? (optional)" 
-                    maxlength="500"
-                    rows="3"
-                ></textarea>
+                <textarea id="journalNotes" class="journal-textarea"
+                    placeholder="Any insights or reflections? (optional)" maxlength="500" rows="3"></textarea>
                 <span class="journal-char-counter" id="journalCharCounter">0/500</span>
             </div>
-            
+
             <button class="complete-btn" id="completeBtn">Continue</button>
         </div>
     </div>
@@ -627,4 +676,5 @@
     <script src="app.js"></script>
     <script src="enhancements.js"></script>
 </body>
+
 </html>
