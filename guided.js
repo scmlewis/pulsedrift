@@ -378,19 +378,22 @@ function showMicroReflectionToast(text, duration = 4000) {
     const toast = document.createElement('div');
     toast.className = 'zen-reflection-toast';
     toast.textContent = text;
+
+    // Use CSS classes instead of inline styles to respect theme
     toast.style.position = 'fixed';
     toast.style.bottom = '20px';
     toast.style.left = '50%';
     toast.style.transform = 'translateX(-50%)';
     toast.style.padding = '12px 20px';
-    toast.style.background = 'rgba(126, 231, 135, 0.2)';
-    toast.style.border = '1px solid rgba(126, 231, 135, 0.4)';
     toast.style.borderRadius = '8px';
-    toast.style.color = '#7ee787';
     toast.style.fontSize = '14px';
     toast.style.zIndex = '9999';
     toast.style.fontFamily = '"Quicksand", sans-serif';
     toast.style.animation = 'fadeInUp 0.3s ease-out';
+    // Theme-aware colors using CSS custom properties
+    toast.style.background = 'var(--zen-water, rgba(126, 231, 135, 0.2))';
+    toast.style.border = '1px solid var(--accent-zen, rgba(126, 231, 135, 0.4))';
+    toast.style.color = 'var(--accent-zen, #7ee787)';
 
     document.body.appendChild(toast);
 

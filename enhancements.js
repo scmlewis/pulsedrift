@@ -160,11 +160,63 @@ function openSaveTemplateModal() {
     
     // Show modal
     enhancementDOM.saveTemplateModal.classList.remove('hidden');
+    
+    // Focus trap: focus the name input and capture tab
+    if (enhancementDOM.templateName) {
+        enhancementDOM.templateName.focus();
+    }
+    
+    // Store previously focused element to restore later
+    enhancementDOM.saveTemplateModal._previousFocus = document.activeElement;
+    
+    // Add keydown handler for focus trap and Escape
+    enhancementDOM.saveTemplateModal._trapHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeSaveTemplateModal();
+            return;
+        }
+        if (e.key !== 'Tab') return;
+        
+        const modal = enhancementDOM.saveTemplateModal.querySelector('.modal');
+        if (!modal) return;
+        
+        const focusable = modal.querySelectorAll('input, button, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length === 0) return;
+        
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        
+        if (e.shiftKey) {
+            if (document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            }
+        } else {
+            if (document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    };
+    
+    enhancementDOM.saveTemplateModal.addEventListener('keydown', enhancementDOM.saveTemplateModal._trapHandler);
 }
 
 function closeSaveTemplateModal() {
     if (enhancementDOM.saveTemplateModal) {
         enhancementDOM.saveTemplateModal.classList.add('hidden');
+        
+        // Remove focus trap handler
+        if (enhancementDOM.saveTemplateModal._trapHandler) {
+            enhancementDOM.saveTemplateModal.removeEventListener('keydown', enhancementDOM.saveTemplateModal._trapHandler);
+            enhancementDOM.saveTemplateModal._trapHandler = null;
+        }
+        
+        // Restore focus to previously focused element
+        if (enhancementDOM.saveTemplateModal._previousFocus) {
+            enhancementDOM.saveTemplateModal._previousFocus.focus();
+            enhancementDOM.saveTemplateModal._previousFocus = null;
+        }
     }
 }
 

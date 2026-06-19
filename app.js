@@ -222,6 +222,9 @@ const completionMessages = [
 // =============================================
 
 function init() {
+    // Add loading class for skeleton state
+    document.body.classList.add('app-loading');
+    
     loadSettings();
     loadSessions();
     setupEventListeners();
@@ -242,6 +245,12 @@ function init() {
 
     // Preload audio files (non-blocking)
     preloadAudioFiles();
+    
+    // Remove loading state, trigger fade-in
+    requestAnimationFrame(() => {
+        document.body.classList.remove('app-loading');
+        document.body.classList.add('app-loaded');
+    });
 }
 
 function loadSettings() {
