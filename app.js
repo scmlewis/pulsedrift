@@ -242,6 +242,10 @@ function init() {
     updateMiniStats();
     initParticleSystem();
     updateCharCounter();
+    initCustomBreathingPatterns();
+    initMoodRecommendations();
+    initEmergencyCalm();
+    initCustomSoundUpload();
 
     // Preload audio files (non-blocking)
     preloadAudioFiles();
@@ -533,9 +537,15 @@ function handleKeyPress(e) {
         DOM.settingsModal.classList.add('hidden');
         DOM.historyPanel.classList.remove('open');
         closeBreathingModal();
+        closeCalmModal();
         if (state.focusMode) {
             toggleFocusMode();
         }
+    }
+
+    // C for emergency calm
+    if (e.code === 'KeyC' && e.target.tagName !== 'INPUT') {
+        startGroundingExercise();
     }
 }
 
@@ -2277,6 +2287,510 @@ function hideIntentionDuringMeditation() {
 }
 
 // =============================================
+// Feature: Custom Breathing Patterns
+// =============================================
+
+function initCustomBreathingPatterns() {
+    refreshBreathingDropdowns();
+
+    const addBtn = document.getElementById('addCustomPatternBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', addCustomBreathingPattern);
+    }
+
+    // Also allow Enter key in custom pattern inputs
+    ['customInhale', 'customHold1', 'customExhale', 'customHold2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') addCustomBreathingPattern();
+            });
+        }
+    });
+}
+
+function loadCustomBreathingPatterns() {
+    return safeGetItem(STORAGE_KEYS.CUSTOM_PATTERNS, []);
+}
+
+function saveCustomBreathingPatterns(patterns) {
+    safeSetItem(STORAGE_KEYS.CUSTOM_PATTERNS, patterns);
+}
+
+function addCustomBreathingPattern() {
+    const inhaleRaw = parseInt(document.getElementById('customInhale')?.value);
+    const hold1Raw = parseInt(document.getElementById('customHold1')?.value);
+    const exhaleRaw = parseInt(document.getElementById('customExhale')?.value);
+    const hold2Raw = parseInt(document.getElementById('customHold2')?.value);
+    const inhale = Number.isFinite(inhaleRaw) ? inhaleRaw : 4;
+    const hold1 = Number.isFinite(hold1Raw) ? hold1Raw : 0;
+    const exhale = Number.isFinite(exhaleRaw) ? exhaleRaw : 4;
+    const hold2 = Number.isFinite(hold2Raw) ? hold2Raw : 0;
+
+    if (inhale < 1 || exhale < 1) {
+        toast.show('Inhale and exhale must be at least 1 second', 'warning');
+        return;
+    }
+    if (inhale + hold1 + exhale + hold2 > 60) {
+        toast.show('Total cycle must be 60 seconds or less', 'warning');
+        return;
+    }
+
+    const parts = [inhale, hold1, exhale, hold2];
+    // Remove trailing zeros, but always keep at least inhale and exhale
+    let patternParts = parts;
+    while (patternParts.length > 2 && patternParts[patternParts.length - 1] === 0) {
+        patternParts = patternParts.slice(0, -1);
+    }
+    // If 3 parts and hold is 0, simplify to 2 parts
+    if (patternParts.length === 3 && patternParts[1] === 0) {
+        patternParts = [patternParts[0], patternParts[2]];
+    }
+    const patternStr = patternParts.join('-');
+
+    const patterns = loadCustomBreathingPatterns();
+    if (patterns.includes(patternStr)) {
+        toast.show('Pattern already exists', 'warning');
+        return;
+    }
+
+    patterns.push(patternStr);
+    saveCustomBreathingPatterns(patterns);
+    refreshBreathingDropdowns();
+    toast.show(`Pattern ${patternStr} added!`, 'success');
+
+    // Clear inputs
+    ['customInhale', 'customHold1', 'customExhale', 'customHold2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+}
+
+function removeCustomBreathingPattern(patternStr) {
+    let patterns = loadCustomBreathingPatterns();
+    patterns = patterns.filter(p => p !== patternStr);
+    saveCustomBreathingPatterns(patterns);
+    refreshBreathingDropdowns();
+    toast.show('Pattern removed', 'success');
+}
+
+function refreshBreathingDropdowns() {
+    const patterns = loadCustomBreathingPatterns();
+    const selects = [
+        document.getElementById('breathingPattern'),
+        document.getElementById('breathingPatternSelect'),
+        document.getElementById('breathingPatternSidebar')
+    ];
+
+    selects.forEach(select => {
+        if (!select) return;
+        // Remove existing custom options
+        select.querySelectorAll('.custom-pattern-option').forEach(opt => opt.remove());
+        // Add custom patterns
+        patterns.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p;
+            option.textContent = `Custom (${p})`;
+            option.className = 'custom-pattern-option';
+            select.appendChild(option);
+        });
+    });
+
+    // Update custom patterns list display in settings
+    renderCustomPatternsList();
+}
+
+function renderCustomPatternsList() {
+    const list = document.getElementById('customPatternsList');
+    if (!list) return;
+
+    const patterns = loadCustomBreathingPatterns();
+    if (patterns.length === 0) {
+        list.innerHTML = '';
+        return;
+    }
+
+    list.innerHTML = patterns.map(p => `
+        <div class="custom-pattern-item">
+            <span class="pattern-value">${p}</span>
+            <button class="pattern-remove-btn" data-pattern="${p}" title="Remove pattern">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+
+    // Event delegation for remove buttons
+    list.querySelectorAll('.pattern-remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            removeCustomBreathingPattern(btn.dataset.pattern);
+        });
+    });
+}
+
+// =============================================
+// Feature: Mood-Based Recommendations
+// =============================================
+
+function initMoodRecommendations() {
+    const grid = document.getElementById('moodRecommendGrid');
+    if (!grid) return;
+
+    grid.addEventListener('click', (e) => {
+        const btn = e.target.closest('.mood-rec-btn');
+        if (!btn) return;
+
+        const mood = btn.dataset.mood;
+        applyMoodRecommendation(mood);
+
+        // Visual feedback
+        grid.querySelectorAll('.mood-rec-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+
+        // Clear selection after 3 seconds
+        setTimeout(() => btn.classList.remove('selected'), 3000);
+    });
+}
+
+function applyMoodRecommendation(mood) {
+    const rec = MOOD_RECOMMENDATIONS[mood];
+    if (!rec) return;
+
+    // Apply breathing pattern
+    state.settings.breathingPattern = rec.pattern;
+    state.breathing.pattern = rec.pattern;
+    const breathingSelect = document.getElementById('breathingPattern');
+    if (breathingSelect) breathingSelect.value = rec.pattern;
+
+    // Apply ambient sound
+    state.audio.ambientSound = rec.ambient;
+    DOM.ambientSound.value = rec.ambient;
+    safeSetRawItem(STORAGE_KEYS.AMBIENT_SOUND, rec.ambient);
+
+    // Apply mantra
+    if (typeof guidedState !== 'undefined') {
+        guidedState.mantraText = rec.mantra;
+    }
+
+    // Apply duration
+    state.timer.duration = rec.duration;
+    state.timer.remaining = rec.duration;
+    updateTimerDisplay();
+    updateTimerProgress();
+
+    // Update preset button active state
+    updateMoodPresetButtons(rec.duration);
+
+    saveSettings();
+    toast.show(`${mood.charAt(0).toUpperCase() + mood.slice(1)}: ${rec.pattern} breathing, ${rec.ambient}`, 'info');
+}
+
+function updateMoodPresetButtons(durationMinutes) {
+    const minutes = durationMinutes / 60;
+    DOM.presets.querySelectorAll('.preset-btn').forEach(b => {
+        b.classList.remove('active');
+        if (parseInt(b.dataset.minutes) === minutes) b.classList.add('active');
+    });
+    DOM.presetsDesktop.querySelectorAll('.preset-btn').forEach(b => {
+        b.classList.remove('active');
+        if (parseInt(b.dataset.minutes) === minutes) b.classList.add('active');
+    });
+}
+
+// =============================================
+// Feature: Emergency Calm / Grounding
+// =============================================
+
+let groundingState = {
+    isActive: false,
+    currentStep: 0,
+    timeoutId: null,
+    audio: null
+};
+
+const calmGroundingScript = [
+    { phase: 'intro', text: 'Take a deep breath. You are safe.', duration: GROUNDING_CONFIG.INTRO_DURATION },
+    { phase: '5', text: 'Name five things you can see around you.', visual: 'Look around you slowly.', duration: GROUNDING_CONFIG.STEP_DURATION },
+    { phase: '4', text: 'Name four things you can touch right now.', visual: 'Feel the surface beneath your hands.', duration: GROUNDING_CONFIG.STEP_DURATION },
+    { phase: '3', text: 'Name three things you can hear.', visual: 'Listen to the sounds around you.', duration: GROUNDING_CONFIG.STEP_DURATION },
+    { phase: '2', text: 'Name two things you can smell.', visual: 'Notice the scents in the air.', duration: GROUNDING_CONFIG.STEP_DURATION },
+    { phase: '1', text: 'Name one thing you can taste.', visual: 'Notice the taste in your mouth.', duration: GROUNDING_CONFIG.STEP_DURATION },
+    { phase: 'close', text: 'You are grounded. You are present. You are safe.', duration: GROUNDING_CONFIG.CLOSE_DURATION }
+];
+
+function initEmergencyCalm() {
+    const calmBtn = document.getElementById('emergencyCalmBtn');
+    const calmCloseBtn = document.getElementById('calmCloseBtn');
+
+    if (calmBtn) {
+        calmBtn.addEventListener('click', startGroundingExercise);
+    }
+    if (calmCloseBtn) {
+        calmCloseBtn.addEventListener('click', stopGroundingExercise);
+    }
+
+    // Close on overlay click
+    const calmModal = document.getElementById('calmModal');
+    if (calmModal) {
+        calmModal.addEventListener('click', (e) => {
+            if (e.target === calmModal) stopGroundingExercise();
+        });
+    }
+}
+
+async function startGroundingExercise() {
+    if (groundingState.isActive) return;
+
+    groundingState.isActive = true;
+    groundingState.currentStep = 0;
+
+    const calmModal = document.getElementById('calmModal');
+    if (calmModal) calmModal.classList.remove('hidden');
+
+    // Start ambient rain for calming effect
+    initAudioContext();
+    const prevAmbient = state.audio.ambientSound;
+    state.audio.ambientSound = 'rain';
+    startAmbientSound();
+    if (typeof fadeInAmbientSound === 'function') {
+        fadeInAmbientSound(1000);
+    }
+
+    // Play grounding steps
+    for (let i = 0; i < calmGroundingScript.length; i++) {
+        if (!groundingState.isActive) break;
+
+        groundingState.currentStep = i;
+        const step = calmGroundingScript[i];
+
+        // Update visual
+        updateCalmVisual(step);
+
+        // Speak the instruction
+        if (typeof speakText === 'function') {
+            await speakText(step.text, { rate: 0.8, volume: 0.7 });
+        }
+
+        // Wait for step duration
+        await new Promise(resolve => {
+            groundingState.timeoutId = setTimeout(resolve, step.duration);
+        });
+    }
+
+    // Restore ambient
+    state.audio.ambientSound = prevAmbient;
+    if (typeof fadeOutAmbientSound === 'function') {
+        fadeOutAmbientSound(1000);
+    }
+    setTimeout(() => {
+        stopAmbientSound();
+        state.audio.ambientSound = prevAmbient;
+    }, 1100);
+
+    stopGroundingExercise();
+}
+
+function updateCalmVisual(step) {
+    const circle = document.getElementById('calmCircle');
+    const instruction = document.getElementById('calmInstruction');
+    const stepEl = document.getElementById('calmStep');
+
+    if (instruction) instruction.textContent = step.visual || step.text;
+    if (stepEl) {
+        if (step.phase === 'intro' || step.phase === 'close') {
+            stepEl.textContent = '';
+        } else {
+            stepEl.textContent = step.phase;
+        }
+    }
+    if (circle) {
+        circle.className = 'calm-circle';
+        if (step.phase !== 'intro' && step.phase !== 'close') {
+            circle.classList.add(`step-${step.phase}`);
+        }
+    }
+}
+
+function stopGroundingExercise() {
+    groundingState.isActive = false;
+    if (groundingState.timeoutId) {
+        clearTimeout(groundingState.timeoutId);
+        groundingState.timeoutId = null;
+    }
+
+    if (typeof stopTTS === 'function') {
+        stopTTS();
+    }
+
+    const calmModal = document.getElementById('calmModal');
+    if (calmModal) calmModal.classList.add('hidden');
+
+    const circle = document.getElementById('calmCircle');
+    if (circle) circle.className = 'calm-circle';
+}
+
+function closeCalmModal() {
+    if (groundingState.isActive) {
+        stopGroundingExercise();
+    }
+}
+
+// =============================================
+// Feature: Custom Sound Upload
+// =============================================
+
+const customSoundState = {
+    blobs: {},
+    files: {}
+};
+
+function initCustomSoundUpload() {
+    const input = document.getElementById('customSoundInput');
+    const btn = document.getElementById('customSoundBtn');
+    const filename = document.getElementById('uploadFilename');
+
+    if (!input || !btn) return;
+
+    btn.addEventListener('click', () => input.click());
+
+    input.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('audio/')) {
+            toast.show('Please select an audio file', 'warning');
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            toast.show('File too large (max 10MB)', 'warning');
+            return;
+        }
+
+        const blobUrl = URL.createObjectURL(file);
+        const soundName = file.name.replace(/\.[^.]+$/, '');
+
+        customSoundState.blobs[soundName] = blobUrl;
+        customSoundState.files[soundName] = {
+            name: soundName,
+            size: file.size,
+            type: file.type,
+            blobUrl
+        };
+
+        addCustomSoundToDropdown(soundName);
+
+        if (filename) filename.textContent = file.name;
+        toast.show(`"${soundName}" added to ambient sounds!`, 'success');
+
+        input.value = '';
+    });
+
+    renderCustomSoundsList();
+}
+
+function addCustomSoundToDropdown(name) {
+    const selects = [DOM.ambientSound];
+    selects.forEach(select => {
+        if (!select) return;
+        // Check if already exists
+        if (select.querySelector(`option[value="custom_${name}"]`)) return;
+        const option = document.createElement('option');
+        option.value = `custom_${name}`;
+        option.textContent = `${name} (custom)`;
+        option.className = 'custom-sound-option';
+        select.appendChild(option);
+    });
+}
+
+function playCustomAmbientSound(name) {
+    const blobUrl = customSoundState.blobs[name];
+    if (!blobUrl) return false;
+
+    initAudioContext();
+    const ctx = state.audio.context;
+
+    const audio = new Audio(blobUrl);
+    audio.loop = true;
+    audio.crossOrigin = 'anonymous';
+
+    const source = ctx.createMediaElementSource(audio);
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = state.audio.volume;
+
+    source.connect(gainNode);
+    gainNode.connect(state.audio.masterGain);
+
+    audio.play().catch(e => console.warn('Custom audio play failed:', e));
+
+    // Register for cleanup
+    activeAmbientSources.push({
+        stop: () => { audio.pause(); audio.currentTime = 0; },
+        disconnect: () => { try { source.disconnect(); gainNode.disconnect(); } catch(e) {} }
+    });
+    state.audio.ambientNodes = activeAmbientSources;
+    state.audio.isAmbientPlaying = true;
+
+    return true;
+}
+
+function renderCustomSoundsList() {
+    const list = document.getElementById('customSoundsList');
+    if (!list) return;
+
+    const sounds = Object.values(customSoundState.files);
+    if (sounds.length === 0) {
+        list.innerHTML = '';
+        return;
+    }
+
+    list.innerHTML = sounds.map(sound => `
+        <div class="custom-sound-item">
+            <span class="sound-name">${escapeHtml(sound.name)}</span>
+            <span class="sound-size">${(sound.size / 1024).toFixed(0)}KB</span>
+            <button class="sound-remove-btn" data-name="${escapeHtml(sound.name)}" title="Remove">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+
+    list.querySelectorAll('.sound-remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const name = btn.dataset.name;
+            if (customSoundState.blobs[name]) {
+                URL.revokeObjectURL(customSoundState.blobs[name]);
+                delete customSoundState.blobs[name];
+                delete customSoundState.files[name];
+            }
+            // Remove from dropdown
+            const option = DOM.ambientSound.querySelector(`option[value="custom_${name}"]`);
+            if (option) option.remove();
+            // Reset to silence if this was active
+            if (state.audio.ambientSound === `custom_${name}`) {
+                state.audio.ambientSound = 'silence';
+                DOM.ambientSound.value = 'silence';
+            }
+            renderCustomSoundsList();
+            toast.show('Custom sound removed', 'success');
+        });
+    });
+}
+
+// Hook into ambient sound system for custom sounds
+const originalStartAmbientSound = startAmbientSound;
+startAmbientSound = function() {
+    const soundKey = state.audio.ambientSound;
+    if (soundKey.startsWith('custom_')) {
+        const name = soundKey.replace('custom_', '');
+        if (playCustomAmbientSound(name)) return;
+    }
+    originalStartAmbientSound();
+};
+
+// =============================================
 // Ambient Sound Diagnostics (Manual Test Helper)
 // =============================================
 
@@ -2335,3 +2849,7 @@ async function runAmbientSoundTests() {
 window.runAmbientSoundTests = runAmbientSoundTests;
 window.state = state;
 window.DOM = DOM;
+window.groundingState = groundingState;
+window.calmGroundingScript = calmGroundingScript;
+window.customSoundState = customSoundState;
+window.stopGroundingExercise = stopGroundingExercise;

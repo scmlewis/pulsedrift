@@ -511,3 +511,5 @@ function saveGuidedSettings() {
     };
     safeSetItem(STORAGE_KEYS.GUIDED_SETTINGS, settings);
 }
+
+window.guidedState = guidedState;

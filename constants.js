@@ -76,7 +76,10 @@ const STORAGE_KEYS = {
     JOURNAL: 'pulsedrift-journal',
     ACHIEVEMENTS: 'pulsedrift-achievements',
     GUIDED_SETTINGS: 'pulsedrift_guided_settings',
-    ACCORDION_PREFIX: 'accordion_'
+    ACCORDION_PREFIX: 'accordion_',
+    CUSTOM_PATTERNS: 'pulsedrift_custom_patterns',
+    RITUALS: 'pulsedrift_rituals',
+    GRATITUDE: 'pulsedrift_gratitude'
 };
 
 // =============================================
@@ -127,6 +130,29 @@ const GUIDED_CONFIG = {
     MANTRA_INTERVAL_MS: 5 * 60 * 1000, // 5 minutes
     TTS_RATE: 0.95,                    // Speech rate (slightly slower)
     TTS_VOLUME: 0.8                    // TTS volume level
+};
+
+// =============================================
+// Mood-Based Recommendations
+// =============================================
+
+const MOOD_RECOMMENDATIONS = {
+    anxious:  { pattern: '4-7-8',    ambient: 'rain',       mantra: 'I am safe in this moment',        duration: 600  },
+    stressed: { pattern: '4-4',      ambient: 'wind',       mantra: 'I release what I cannot control', duration: 600  },
+    restless: { pattern: '4-4-4-4',  ambient: 'forest',     mantra: 'I am exactly where I need to be', duration: 900  },
+    sad:      { pattern: '4-4',      ambient: 'waves',      mantra: 'This feeling will pass',          duration: 600  },
+    tired:    { pattern: '4-4',      ambient: 'brownNoise', mantra: 'Rest is productive',              duration: 300  },
+    calm:     { pattern: '4-4',      ambient: 'silence',    mantra: 'I am grateful for this moment',   duration: 1200 }
+};
+
+// =============================================
+// Emergency Calm / Grounding
+// =============================================
+
+const GROUNDING_CONFIG = {
+    STEP_DURATION: 8000,    // ms per grounding step
+    INTRO_DURATION: 3000,   // ms for intro
+    CLOSE_DURATION: 4000    // ms for closing
 };
 
 // =============================================
@@ -241,6 +267,8 @@ if (typeof window !== 'undefined') {
     window.AUDIO_CONFIG = AUDIO_CONFIG;
     window.ACHIEVEMENT_THRESHOLDS = ACHIEVEMENT_THRESHOLDS;
     window.DATA_EXPORT_VERSION = DATA_EXPORT_VERSION;
+    window.MOOD_RECOMMENDATIONS = MOOD_RECOMMENDATIONS;
+    window.GROUNDING_CONFIG = GROUNDING_CONFIG;
     window.safeGetItem = safeGetItem;
     window.safeSetItem = safeSetItem;
     window.safeGetRawItem = safeGetRawItem;

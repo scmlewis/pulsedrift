@@ -12,7 +12,9 @@ const enhancementState = {
     achievements: [],
     journal: [],
     currentMood: null,
-    currentJournalNote: ''
+    currentJournalNote: '',
+    gratitude: [],
+    rituals: []
 };
 
 // =============================================
@@ -578,6 +580,8 @@ function importSessionData(data) {
     const importedTemplates = Array.isArray(data.templates) ? data.templates : [];
     const importedJournal = Array.isArray(data.journal) ? data.journal : [];
     const importedAchievements = Array.isArray(data.achievements) ? data.achievements : [];
+    const importedGratitude = Array.isArray(data.gratitude) ? data.gratitude : [];
+    const importedRituals = Array.isArray(data.rituals) ? data.rituals : [];
     const importedSettings = data.settings || null;
 
     if (shouldMerge) {
@@ -585,11 +589,15 @@ function importSessionData(data) {
         enhancementState.templates = mergeById(enhancementState.templates || [], importedTemplates, 'id');
         enhancementState.journal = mergeById(enhancementState.journal || [], importedJournal, 'id');
         enhancementState.achievements = mergeUniqueValues(enhancementState.achievements || [], importedAchievements);
+        enhancementState.gratitude = mergeById(enhancementState.gratitude || [], importedGratitude, 'id');
+        enhancementState.rituals = mergeById(enhancementState.rituals || [], importedRituals, 'id');
     } else {
         state.sessions = importedSessions;
         enhancementState.templates = importedTemplates;
         enhancementState.journal = importedJournal;
         enhancementState.achievements = importedAchievements;
+        enhancementState.gratitude = importedGratitude;
+        enhancementState.rituals = importedRituals;
     }
 
     saveSessions();
@@ -601,6 +609,8 @@ function importSessionData(data) {
 
     safeSetItem(STORAGE_KEYS.JOURNAL, enhancementState.journal);
     safeSetItem(STORAGE_KEYS.ACHIEVEMENTS, enhancementState.achievements);
+    safeSetItem(STORAGE_KEYS.GRATITUDE, enhancementState.gratitude);
+    safeSetItem(STORAGE_KEYS.RITUALS, enhancementState.rituals);
 
     if (importedSettings && typeof importedSettings === 'object') {
         Object.assign(state.settings, importedSettings);
@@ -671,6 +681,8 @@ function exportSessionData() {
         templates: enhancementState.templates || [],
         journal: enhancementState.journal || [],
         achievements: enhancementState.achievements || [],
+        gratitude: enhancementState.gratitude || [],
+        rituals: enhancementState.rituals || [],
         settings: state.settings,
         exportDate: new Date().toISOString(),
         version: '1.0'
@@ -973,7 +985,208 @@ function enhanceCompleteHandler() {
             enhancementDOM.achievementBadge.classList.add('hidden');
         }
         
-        refreshEnhancedStats();
+    refreshEnhancedStats();
+    renderRituals();
+    renderGratitudeEntries();
+    });
+}
+
+// =============================================
+// Feature: Gratitude Journal
+// =============================================
+
+function initGratitudeJournal() {
+    enhancementState.gratitude = safeGetItem(STORAGE_KEYS.GRATITUDE, []);
+
+    const addBtn = document.getElementById('gratitudeAddBtn');
+    const input = document.getElementById('gratitudeInput');
+
+    if (addBtn) {
+        addBtn.addEventListener('click', addGratitudeEntry);
+    }
+    if (input) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addGratitudeEntry();
+        });
+    }
+
+    renderGratitudeEntries();
+}
+
+function addGratitudeEntry() {
+    const input = document.getElementById('gratitudeInput');
+    if (!input) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    enhancementState.gratitude.push({
+        id: Date.now().toString(),
+        text: text,
+        date: new Date().toISOString()
+    });
+
+    safeSetItem(STORAGE_KEYS.GRATITUDE, enhancementState.gratitude);
+    input.value = '';
+    renderGratitudeEntries();
+    toast.show('Gratitude saved!', 'success');
+}
+
+function renderGratitudeEntries() {
+    const list = document.getElementById('gratitudeList');
+    if (!list) return;
+
+    const entries = enhancementState.gratitude.slice(-10).reverse();
+    if (entries.length === 0) {
+        list.innerHTML = '<p class="gratitude-empty">Start your gratitude practice</p>';
+        return;
+    }
+
+    list.innerHTML = entries.map(entry => {
+        const date = new Date(entry.date);
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `
+            <div class="gratitude-entry" data-id="${entry.id}">
+                <span class="gratitude-date">${dateStr}</span>
+                <span class="gratitude-text">${escapeHtml(entry.text)}</span>
+                <button class="gratitude-delete-btn" data-id="${entry.id}" title="Delete">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        `;
+    }).join('');
+
+    list.querySelectorAll('.gratitude-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            enhancementState.gratitude = enhancementState.gratitude.filter(e => e.id !== id);
+            safeSetItem(STORAGE_KEYS.GRATITUDE, enhancementState.gratitude);
+            renderGratitudeEntries();
+            toast.show('Entry removed', 'success');
+        });
+    });
+}
+
+// =============================================
+// Feature: Morning/Evening Rituals
+// =============================================
+
+function initRituals() {
+    enhancementState.rituals = safeGetItem(STORAGE_KEYS.RITUALS, []);
+
+    const addBtn = document.getElementById('saveRitualBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', openSaveRitualModal);
+    }
+
+    renderRituals();
+}
+
+function openSaveRitualModal() {
+    const modal = document.getElementById('saveRitualModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        const nameInput = document.getElementById('ritualName');
+        if (nameInput) {
+            nameInput.value = '';
+            nameInput.focus();
+        }
+    }
+}
+
+function closeSaveRitualModal() {
+    const modal = document.getElementById('saveRitualModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function saveRitual() {
+    const nameInput = document.getElementById('ritualName');
+    const name = nameInput?.value.trim();
+    if (!name) {
+        toast.show('Please enter a ritual name', 'warning');
+        return;
+    }
+
+    const ritual = {
+        id: Date.now().toString(),
+        name: name,
+        steps: [
+            { type: 'timer', duration: state.timer.duration, ambient: state.audio.ambientSound }
+        ],
+        createdAt: new Date().toISOString()
+    };
+
+    enhancementState.rituals.push(ritual);
+    safeSetItem(STORAGE_KEYS.RITUALS, enhancementState.rituals);
+    renderRituals();
+    closeSaveRitualModal();
+    toast.show(`Ritual "${name}" saved!`, 'success');
+}
+
+function deleteRitual(ritualId) {
+    const ritual = enhancementState.rituals.find(r => r.id === ritualId);
+    if (!ritual) return;
+
+    if (confirm(`Delete ritual "${ritual.name}"?`)) {
+        enhancementState.rituals = enhancementState.rituals.filter(r => r.id !== ritualId);
+        safeSetItem(STORAGE_KEYS.RITUALS, enhancementState.rituals);
+        renderRituals();
+        toast.show('Ritual deleted', 'success');
+    }
+}
+
+function runRitual(ritualId) {
+    const ritual = enhancementState.rituals.find(r => r.id === ritualId);
+    if (!ritual || !ritual.steps || ritual.steps.length === 0) return;
+
+    const step = ritual.steps[0];
+    if (step.type === 'timer') {
+        state.timer.duration = step.duration;
+        state.timer.remaining = step.duration;
+        if (step.ambient) {
+            state.audio.ambientSound = step.ambient;
+            DOM.ambientSound.value = step.ambient;
+            safeSetRawItem(STORAGE_KEYS.AMBIENT_SOUND, step.ambient);
+        }
+        updateTimerDisplay();
+        updateTimerProgress();
+        toast.show(`Ritual "${ritual.name}" loaded. Press Start!`, 'success');
+    }
+}
+
+function renderRituals() {
+    const list = document.getElementById('ritualsList');
+    if (!list) return;
+
+    if (enhancementState.rituals.length === 0) {
+        list.innerHTML = '<p class="rituals-empty">No rituals yet. Save your current settings as a ritual.</p>';
+        return;
+    }
+
+    list.innerHTML = enhancementState.rituals.map(ritual => {
+        const duration = ritual.steps.reduce((sum, s) => sum + (s.duration || 0), 0);
+        const minutes = Math.floor(duration / 60);
+        return `
+            <div class="ritual-item" data-id="${ritual.id}">
+                <div class="ritual-info">
+                    <div class="ritual-name">${escapeHtml(ritual.name)}</div>
+                    <div class="ritual-details">${minutes} min total</div>
+                </div>
+                <div class="ritual-actions-group">
+                    <button class="ritual-run-btn" data-action="run" data-ritual-id="${ritual.id}">Run</button>
+                    <button class="ritual-delete-btn" data-action="delete" data-ritual-id="${ritual.id}">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    list.querySelectorAll('.ritual-run-btn').forEach(btn => {
+        btn.addEventListener('click', () => runRitual(btn.dataset.ritualId));
+    });
+    list.querySelectorAll('.ritual-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteRitual(btn.dataset.ritualId));
     });
 }
 
@@ -990,6 +1203,8 @@ function initEnhancements() {
     initJournal();
     initAchievements();
     initAutoFocusInput();
+    initGratitudeJournal();
+    initRituals();
     
     // Enhance complete handler
     setTimeout(enhanceCompleteHandler, UI_TIMING.COMPLETE_HANDLER_DELAY);
@@ -1009,3 +1224,5 @@ window.playMilestoneCompletionSound = playMilestoneCompletionSound;
 window.refreshEnhancedStats = refreshEnhancedStats;
 window.enhancementState = enhancementState;
 window.enhancementDOM = enhancementDOM;
+window.closeSaveRitualModal = closeSaveRitualModal;
+window.saveRitual = saveRitual;

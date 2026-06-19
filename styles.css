@@ -3258,3 +3258,495 @@ textarea:focus-visible {
     opacity: 1;
     transition: opacity 0.4s ease;
 }
+
+/* =============================================
+   Emergency Calm Button
+   ============================================= */
+
+.emergency-calm-btn {
+    position: relative;
+    color: var(--accent-zen);
+}
+
+.emergency-calm-btn::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--accent-zen);
+    opacity: 0;
+    animation: calm-pulse 3s ease-in-out infinite;
+}
+
+@keyframes calm-pulse {
+    0%, 100% { opacity: 0; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.15); }
+}
+
+.emergency-calm-btn:hover::after {
+    animation: none;
+    opacity: 0.6;
+}
+
+/* =============================================
+   Calm / Grounding Modal
+   ============================================= */
+
+.calm-modal {
+    max-width: 420px;
+    text-align: center;
+    padding: var(--space-xxl) var(--space-xl);
+}
+
+.calm-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+}
+
+.calm-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: var(--radius-full);
+    background: var(--zen-water);
+    border: 2px solid var(--accent-zen);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-sm);
+    transition: all 1s ease;
+    animation: calm-breathe 4s ease-in-out infinite;
+}
+
+.calm-circle.step-5 { border-color: #7ee787; box-shadow: 0 0 40px rgba(126, 231, 135, 0.3); }
+.calm-circle.step-4 { border-color: #58a6ff; box-shadow: 0 0 40px rgba(88, 166, 255, 0.3); }
+.calm-circle.step-3 { border-color: #d2a8ff; box-shadow: 0 0 40px rgba(210, 168, 255, 0.3); }
+.calm-circle.step-2 { border-color: #ffa657; box-shadow: 0 0 40px rgba(255, 166, 87, 0.3); }
+.calm-circle.step-1 { border-color: #ff7b72; box-shadow: 0 0 40px rgba(255, 123, 114, 0.3); }
+
+@keyframes calm-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.calm-instruction {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    padding: 0 var(--space-md);
+    line-height: 1.4;
+}
+
+.calm-step {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--accent-zen);
+}
+
+.calm-close-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: var(--space-sm) var(--space-lg);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    transition: all var(--transition-fast);
+}
+
+.calm-close-btn:hover {
+    border-color: var(--accent-zen);
+    color: var(--accent-zen);
+}
+
+/* =============================================
+   Mood-Based Recommendations
+   ============================================= */
+
+.mood-recommend-section {
+    margin-bottom: var(--space-md);
+}
+
+.mood-prompt {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+    text-align: center;
+}
+
+.mood-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-xs);
+}
+
+.mood-rec-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm) var(--space-xs);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.mood-rec-btn:hover {
+    border-color: var(--accent-zen);
+    background: var(--zen-water);
+}
+
+.mood-rec-btn.selected {
+    border-color: var(--accent-zen);
+    background: var(--zen-water);
+    box-shadow: 0 0 12px rgba(126, 231, 135, 0.2);
+}
+
+.mood-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    font-family: var(--font-family);
+}
+
+.mood-rec-btn.selected .mood-label {
+    color: var(--accent-zen);
+}
+
+/* =============================================
+   Custom Breathing Pattern Input
+   ============================================= */
+
+.custom-pattern-input {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+}
+
+.custom-pattern-input input {
+    width: 50px;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    text-align: center;
+}
+
+.custom-pattern-input input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.pattern-separator {
+    color: var(--text-muted);
+    font-size: var(--font-size-lg);
+}
+
+.add-pattern-btn {
+    background: var(--accent-zen);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs) var(--space-sm);
+    font-family: var(--font-family);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+}
+
+.add-pattern-btn:hover {
+    opacity: 0.85;
+}
+
+.custom-patterns-list {
+    margin-top: var(--space-sm);
+}
+
+.custom-pattern-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.pattern-value {
+    font-size: var(--font-size-sm);
+    color: var(--accent-zen);
+    font-family: monospace;
+}
+
+.pattern-remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast);
+}
+
+.pattern-remove-btn:hover {
+    color: #ff7b72;
+}
+
+/* =============================================
+   Gratitude Journal
+   ============================================= */
+
+.gratitude-section {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.gratitude-title {
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+}
+
+.gratitude-input-group {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.gratitude-input-group input {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+}
+
+.gratitude-input-group input:focus {
+    outline: none;
+    border-color: var(--accent-zen);
+}
+
+.gratitude-input-group input::placeholder {
+    color: var(--text-muted);
+}
+
+.gratitude-add-btn {
+    background: var(--accent-zen);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm) var(--space-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity var(--transition-fast);
+}
+
+.gratitude-add-btn:hover {
+    opacity: 0.85;
+}
+
+.gratitude-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.gratitude-empty {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    text-align: center;
+    padding: var(--space-md);
+}
+
+.gratitude-entry {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent-zen);
+}
+
+.gratitude-date {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.gratitude-text {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.gratitude-delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    transition: all var(--transition-fast);
+}
+
+.gratitude-entry:hover .gratitude-delete-btn {
+    opacity: 1;
+}
+
+.gratitude-delete-btn:hover {
+    color: #ff7b72;
+}
+
+/* =============================================
+   Rituals
+   ============================================= */
+
+.rituals-empty {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    text-align: center;
+    padding: var(--space-md);
+}
+
+.ritual-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.ritual-info {
+    flex: 1;
+}
+
+.ritual-name {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.ritual-details {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.ritual-actions-group {
+    display: flex;
+    gap: var(--space-xs);
+}
+
+.ritual-run-btn,
+.ritual-delete-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.ritual-run-btn:hover {
+    border-color: var(--accent-zen);
+    color: var(--accent-zen);
+}
+
+.ritual-delete-btn:hover {
+    border-color: #ff7b72;
+    color: #ff7b72;
+}
+
+/* =============================================
+   Custom Sound Upload
+   ============================================= */
+
+.custom-sound-upload {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.upload-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    background: var(--bg-tertiary);
+    border: 1px dashed var(--border-color);
+    color: var(--text-secondary);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.upload-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.upload-filename {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.custom-sounds-list {
+    margin-top: var(--space-sm);
+}
+
+.custom-sound-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.sound-name {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.sound-size {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.sound-remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast);
+}
+
+.sound-remove-btn:hover {
+    color: #ff7b72;
+}
