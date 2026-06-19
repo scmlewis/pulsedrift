@@ -239,6 +239,9 @@ function init() {
     updateMiniStats();
     initParticleSystem();
     updateCharCounter();
+
+    // Preload audio files (non-blocking)
+    preloadAudioFiles();
 }
 
 function loadSettings() {
@@ -345,13 +348,11 @@ function setupEventListeners() {
             clearTimeout(state.audio.previewTimeout);
             state.audio.previewTimeout = null;
         }
-        // Stop current ambient and start new one if timer is running
+        // Stop current ambient and start new one
         stopAmbientSound();
         if (e.target.value !== 'silence') {
-            if (state.timer.isRunning) {
-                startAmbientSound();
-            } else {
-                startAmbientSound();
+            startAmbientSound();
+            if (!state.timer.isRunning) {
                 if (typeof fadeInAmbientSound === 'function') {
                     fadeInAmbientSound(500); // quick fade in for preview
                 } else if (state.audio.masterGain) {
@@ -694,7 +695,7 @@ function updateTimerDisplay() {
 }
 
 function updateTimerProgress() {
-    const circumference = 2 * Math.PI * 90; // r = 90
+    const circumference = 2 * Math.PI * TIMER.PROGRESS_RADIUS;
     const progress = state.timer.remaining / state.timer.duration;
     const offset = circumference * (1 - progress);
     DOM.timerProgress.style.strokeDashoffset = offset;
@@ -820,8 +821,30 @@ function setCustomTimeDesktop() {
 }
 
 // =============================================
-// Audio System (Web Audio API)
+// Audio System (Web Audio API + File-Based)
 // =============================================
+
+// Audio file paths for high-quality recorded sounds
+const AUDIO_FILES = {
+    bells: {
+        'singing-bowl': 'audio/bells/singing-bowl.wav',
+        'soft-gong': 'audio/bells/gong.wav',
+        'bell': 'audio/bells/temple-bell.wav'
+    },
+    ambient: {
+        'rain': 'audio/ambient/rain.wav',
+        'waves': 'audio/ambient/ocean-waves.wav',
+        'forest': 'audio/ambient/forest.wav',
+        'wind': 'audio/ambient/wind.wav',
+        'fire': 'audio/ambient/fire.wav',
+        'brownNoise': 'audio/ambient/brown-noise.wav',
+        'zen': 'audio/ambient/zen-chimes.wav',
+        'chants': null // Procedural only
+    }
+};
+
+// Decoded audio buffers cache
+const audioBufferCache = new Map();
 
 function initAudioContext() {
     if (!state.audio.context) {
@@ -831,16 +854,85 @@ function initAudioContext() {
         state.audio.masterGain.connect(state.audio.context.destination);
     }
 
-    // Resume context if suspended (for autoplay policy)
     if (state.audio.context.state === 'suspended') {
         state.audio.context.resume();
     }
+}
+
+/**
+ * Preload all audio files into decoded buffers for instant playback
+ */
+async function preloadAudioFiles() {
+    initAudioContext();
+    const ctx = state.audio.context;
+    const allFiles = { ...AUDIO_FILES.bells, ...AUDIO_FILES.ambient };
+
+    const loadPromises = Object.entries(allFiles).map(async ([key, path]) => {
+        if (!path || audioBufferCache.has(key)) return;
+        try {
+            const response = await fetch(path);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+            audioBufferCache.set(key, audioBuffer);
+        } catch (e) {
+            console.warn(`Failed to preload audio: ${key}`, e);
+        }
+    });
+
+    await Promise.allSettled(loadPromises);
+}
+
+/**
+ * Get a decoded audio buffer by key
+ */
+function getAudioBuffer(key) {
+    return audioBufferCache.get(key) || null;
+}
+
+/**
+ * Play a sound from a decoded buffer
+ */
+function playBufferSound(bufferKey, volumeMultiplier = 1, isCompletion = false) {
+    initAudioContext();
+    const ctx = state.audio.context;
+    const buffer = getAudioBuffer(bufferKey);
+    if (!buffer) return false;
+
+    const source = ctx.createBufferSource();
+    const gainNode = ctx.createGain();
+
+    source.buffer = buffer;
+
+    // For completion bells, let the full sound play; otherwise use original duration
+    const baseVolume = 0.8 * volumeMultiplier;
+    gainNode.gain.setValueAtTime(baseVolume, ctx.currentTime);
+
+    if (!isCompletion && buffer.duration > 5) {
+        // Trim long sounds to 5 seconds for non-completion bells
+        source.loop = false;
+        gainNode.gain.setValueAtTime(baseVolume, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 5);
+        source.stop(ctx.currentTime + 5);
+    }
+
+    source.connect(gainNode);
+    gainNode.connect(state.audio.masterGain);
+
+    source.start(ctx.currentTime);
+    return true;
 }
 
 function playBellSound(volumeMultiplier = 1, isCompletion = false) {
     if (state.audio.bellSound === 'silence') return;
 
     initAudioContext();
+
+    // Try file-based playback first
+    const played = playBufferSound(state.audio.bellSound, volumeMultiplier, isCompletion);
+    if (played) return;
+
+    // Fallback to procedural synthesis
     const ctx = state.audio.context;
     const now = ctx.currentTime;
 
@@ -857,6 +949,10 @@ function playBellSound(volumeMultiplier = 1, isCompletion = false) {
     }
 }
 
+// =============================================
+// Procedural Bell Fallbacks
+// =============================================
+
 function playSingingBowl(ctx, now, volumeMultiplier, isCompletion) {
     const duration = isCompletion ? 8 : 5;
     const frequencies = isCompletion ? [220, 330, 440, 550] : [220, 330, 440];
@@ -869,7 +965,6 @@ function playSingingBowl(ctx, now, volumeMultiplier, isCompletion) {
         oscillator.frequency.setValueAtTime(freq, now);
         oscillator.frequency.exponentialRampToValueAtTime(freq * 0.98, now + duration);
 
-        // Add slight vibrato
         const vibrato = ctx.createOscillator();
         const vibratoGain = ctx.createGain();
         vibrato.frequency.value = 4 + i;
@@ -896,7 +991,6 @@ function playSoftGong(ctx, now, volumeMultiplier, isCompletion) {
     const duration = isCompletion ? 6 : 4;
     const freq = isCompletion ? 80 : 100;
 
-    // Fundamental
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = 'sine';
@@ -909,7 +1003,6 @@ function playSoftGong(ctx, now, volumeMultiplier, isCompletion) {
     osc1.start(now);
     osc1.stop(now + duration);
 
-    // Overtones
     [2, 3, 4.5].forEach((mult, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -929,7 +1022,6 @@ function playTempleBell(ctx, now, volumeMultiplier, isCompletion) {
     const duration = isCompletion ? 5 : 3;
     const baseFreq = 800;
 
-    // Main tone
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
@@ -945,7 +1037,6 @@ function playTempleBell(ctx, now, volumeMultiplier, isCompletion) {
     osc.start(now);
     osc.stop(now + duration);
 
-    // Harmonics
     [2, 2.4, 3].forEach((mult, i) => {
         const oscH = ctx.createOscillator();
         const gainH = ctx.createGain();
@@ -961,24 +1052,66 @@ function playTempleBell(ctx, now, volumeMultiplier, isCompletion) {
     });
 }
 
+// =============================================
+// Ambient Sound System (File-Based + Procedural Fallback)
+// =============================================
+
+// Track active audio sources for proper cleanup
+let activeAmbientSources = [];
+
 function startAmbientSound() {
     if (state.audio.isAmbientPlaying) return;
 
     initAudioContext();
     const ctx = state.audio.context;
+    const soundKey = state.audio.ambientSound;
 
-    switch (state.audio.ambientSound) {
+    if (soundKey === 'silence') return;
+
+    // Try file-based ambient first
+    const buffer = getAudioBuffer(soundKey);
+    if (buffer) {
+        startFileAmbient(buffer);
+        state.audio.isAmbientPlaying = true;
+        return;
+    }
+
+    // Fallback to procedural synthesis
+    switch (soundKey) {
         case 'rain': createRainSound(ctx); break;
         case 'waves': createWavesSound(ctx); break;
         case 'forest': createForestSound(ctx); break;
         case 'wind': createWindSound(ctx); break;
-        case 'zen': createZenMusic(ctx); break;
+        case 'zen': createZenSound(ctx); break;
         case 'fire': createFireSound(ctx); break;
         case 'brownNoise': createBrownNoiseSound(ctx); break;
         case 'chants': createChantsSound(ctx); break;
     }
 
     state.audio.isAmbientPlaying = true;
+}
+
+/**
+ * Start ambient sound from a decoded audio buffer with looping
+ */
+function startFileAmbient(buffer) {
+    const ctx = state.audio.context;
+
+    const source = ctx.createBufferSource();
+    const gainNode = ctx.createGain();
+
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(gainNode);
+    gainNode.connect(state.audio.masterGain);
+
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(state.audio.volume, ctx.currentTime + 1);
+
+    source.start(ctx.currentTime);
+
+    activeAmbientSources.push(source, gainNode);
+    state.audio.ambientNodes = activeAmbientSources;
 }
 
 function createNoiseBuffer(ctx, type) {
@@ -1140,7 +1273,7 @@ function createWindSound(ctx) {
     registerAmbientNode(gain);
 }
 
-function createZenMusic(ctx) {
+function createZenSound(ctx) {
     const now = ctx.currentTime;
     const baseGain = ctx.createGain();
     baseGain.gain.value = 0.6; // Increased from 0.14
@@ -1244,7 +1377,18 @@ function createChantsSound(ctx) {
 }
 
 function stopAmbientSound() {
-    // Stop all registered ambient nodes (Audio elements and source nodes)
+    // Stop all active ambient sources
+    activeAmbientSources.forEach(node => {
+        try {
+            if (node.stop) node.stop();
+        } catch (e) { /* ignore */ }
+        try {
+            if (node.disconnect) node.disconnect();
+        } catch (e) { /* ignore */ }
+    });
+    activeAmbientSources = [];
+
+    // Also stop any registered ambient nodes
     if (state.audio.ambientNodes && state.audio.ambientNodes.length > 0) {
         state.audio.ambientNodes.forEach(node => {
             try {
@@ -1701,11 +1845,15 @@ function formatTime(seconds) {
 
 document.addEventListener('DOMContentLoaded', init);
 
-// Handle visibility change (pause ambient when tab is hidden to save resources)
+// Handle visibility change (pause ambient and particles when tab is hidden)
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        if (state.audio.isAmbientPlaying) {
-            // Store state but don't fully stop (timer continues)
+        if (particleSystem) {
+            particleSystem.stop();
+        }
+    } else {
+        if (particleSystem) {
+            particleSystem.start();
         }
     }
 });
@@ -1876,6 +2024,12 @@ class ToastManager {
 
         // Add click to dismiss
         toast.addEventListener('click', () => this.remove(toast));
+
+        // Set progress bar animation duration to match dismiss timing
+        const progressBar = toast.querySelector('.toast-progress');
+        if (progressBar && duration > 0) {
+            progressBar.style.animationDuration = `${duration}ms`;
+        }
 
         return toast;
     }

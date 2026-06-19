@@ -1923,7 +1923,7 @@ body {
 
     .content-wrapper {
         grid-template-columns: 450px 1fr;
-        gap: var(--space-xxl) * 1.5;
+        gap: calc(var(--space-xxl) * 1.5);
     }
 
     .desktop-sidebar {

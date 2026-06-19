@@ -809,11 +809,27 @@ function calculateCurrentStreak() {
     let streak = 0;
     let checkDate = new Date(today);
     
+    // Allow today or yesterday as streak start
+    if (!state.sessions.some(session => {
+        const d = new Date(session.date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === checkDate.getTime();
+    })) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        if (!state.sessions.some(session => {
+            const d = new Date(session.date);
+            d.setHours(0, 0, 0, 0);
+            return d.getTime() === checkDate.getTime();
+        })) {
+            return 0;
+        }
+    }
+    
     while (true) {
         const hasSession = state.sessions.some(session => {
-            const sessionDate = new Date(session.timestamp);
-            sessionDate.setHours(0, 0, 0, 0);
-            return sessionDate.getTime() === checkDate.getTime();
+            const d = new Date(session.date);
+            d.setHours(0, 0, 0, 0);
+            return d.getTime() === checkDate.getTime();
         });
         
         if (hasSession) {
@@ -854,23 +870,6 @@ function initAutoFocusInput() {
 }
 
 // =============================================
-// Feature #7: Timer Fade-in for Ambient Sounds
-// =============================================
-
-function fadeInAmbientSound() {
-    if (!state.audio.masterGain) return;
-    
-    // Start at 0 volume
-    state.audio.masterGain.gain.setValueAtTime(0, state.audio.context.currentTime);
-    
-    // Fade in over 3 seconds
-    state.audio.masterGain.gain.linearRampToValueAtTime(
-        state.audio.volume,
-        state.audio.context.currentTime + 3
-    );
-}
-
-// =============================================
 // Feature #6: Completion Sound Variety
 // =============================================
 
@@ -880,26 +879,22 @@ function playMilestoneCompletionSound(sessionData) {
     
     // Different sounds for milestones
     if (totalSessions === 1) {
-        // First session - extra special
         if (typeof playBellSound !== 'undefined') {
-            playBellSound('long');
-            setTimeout(() => playBellSound('long'), 800);
+            playBellSound(1, true);
+            setTimeout(() => playBellSound(1, true), 800);
         }
     } else if (duration >= 1800) {
-        // 30+ minute session
         if (typeof playBellSound !== 'undefined') {
-            playBellSound('long');
+            playBellSound(1, true);
         }
     } else if (totalSessions % 10 === 0) {
-        // Every 10th session
         if (typeof playBellSound !== 'undefined') {
-            playBellSound('long');
-            setTimeout(() => playBellSound('short'), 600);
+            playBellSound(1, true);
+            setTimeout(() => playBellSound(0.5), 600);
         }
     } else {
-        // Regular completion
         if (typeof playBellSound !== 'undefined') {
-            playBellSound('long');
+            playBellSound(1, true);
         }
     }
 }
@@ -908,39 +903,24 @@ function playMilestoneCompletionSound(sessionData) {
 // Integration with Existing Complete Handler
 // =============================================
 
-// Override the existing complete button handler to include journal and achievements
+// Enhance the complete handler by extending the overlay close behavior
+// instead of cloning the button (which is fragile and race-condition prone)
 function enhanceCompleteHandler() {
-    const originalCompleteBtn = DOM.completeBtn;
-    if (!originalCompleteBtn) return;
+    if (!DOM.completeOverlay) return;
     
-    // Remove existing listeners (hacky but necessary)
-    const newCompleteBtn = originalCompleteBtn.cloneNode(true);
-    originalCompleteBtn.parentNode.replaceChild(newCompleteBtn, originalCompleteBtn);
-    DOM.completeBtn = newCompleteBtn;
-    
-    newCompleteBtn.addEventListener('click', () => {
-        // Get the last session data
-        const lastSession = state.sessions[state.sessions.length - 1];
+    DOM.completeOverlay.addEventListener('click', (e) => {
+        if (e.target !== DOM.completeOverlay) return;
         
+        const lastSession = state.sessions[state.sessions.length - 1];
         if (lastSession) {
-            // Save journal entry
             saveJournalEntry(lastSession);
-            
-            // Check for achievements
             checkAchievements(lastSession);
         }
         
-        // Hide achievement badge
         if (enhancementDOM.achievementBadge) {
             enhancementDOM.achievementBadge.classList.add('hidden');
         }
         
-        // Hide complete overlay
-        if (DOM.completeOverlay) {
-            DOM.completeOverlay.classList.add('hidden');
-        }
-        
-        // Update heatmap
         refreshEnhancedStats();
     });
 }
@@ -973,7 +953,6 @@ if (document.readyState === 'loading') {
 }
 
 // Make functions globally available (only those needed externally)
-window.fadeInAmbientSound = fadeInAmbientSound;
 window.playMilestoneCompletionSound = playMilestoneCompletionSound;
 window.refreshEnhancedStats = refreshEnhancedStats;
 window.enhancementState = enhancementState;

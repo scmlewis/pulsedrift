@@ -197,21 +197,23 @@ function startMantraReminders(mantra = null, intervalMs = null) {
 
     guidedState.lastMantraTime = Date.now();
 
-    // Create custom interval for mantra (tied to session active state)
-    const mantraIntervalId = setInterval(() => {
-        if (!state.timer.isRunning) {
-            clearInterval(mantraIntervalId);
-            return;
-        }
+    // Use recursive setTimeout instead of setInterval for efficiency
+    const scheduleNext = () => {
+        if (!state.timer.isRunning) return;
 
-        const now = Date.now();
-        if (now - guidedState.lastMantraTime >= guidedState.mantraInterval) {
+        const elapsed = Date.now() - guidedState.lastMantraTime;
+        const remaining = guidedState.mantraInterval - elapsed;
+
+        if (remaining <= 0) {
             playMantra(guidedState.mantraText);
-            guidedState.lastMantraTime = now;
+            guidedState.lastMantraTime = Date.now();
+            state.timer.mantraIntervalId = setTimeout(scheduleNext, guidedState.mantraInterval);
+        } else {
+            state.timer.mantraIntervalId = setTimeout(scheduleNext, remaining);
         }
-    }, 1000);
+    };
 
-    state.timer.mantraIntervalId = mantraIntervalId;
+    state.timer.mantraIntervalId = setTimeout(scheduleNext, guidedState.mantraInterval);
 }
 
 /**
