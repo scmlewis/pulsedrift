@@ -3366,14 +3366,20 @@ textarea:focus-visible {
    ============================================= */
 
 .mood-recommend-section {
+    padding: var(--space-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    margin-top: var(--space-md);
     margin-bottom: var(--space-md);
+    transition: opacity var(--transition-normal);
 }
 
 .mood-prompt {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
     margin-bottom: var(--space-sm);
-    text-align: center;
+    font-weight: 500;
 }
 
 .mood-grid {

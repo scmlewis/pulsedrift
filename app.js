@@ -246,9 +246,6 @@ function init() {
     initMoodRecommendations();
     initEmergencyCalm();
     initCustomSoundUpload();
-
-    // Preload audio files (non-blocking)
-    preloadAudioFiles();
     
     // Remove loading state, trigger fade-in
     requestAnimationFrame(() => {
@@ -840,30 +837,8 @@ function setCustomTimeDesktop() {
 }
 
 // =============================================
-// Audio System (Web Audio API + File-Based)
+// Audio System (Web Audio API)
 // =============================================
-
-// Audio file paths for high-quality recorded sounds
-const AUDIO_FILES = {
-    bells: {
-        'singing-bowl': 'audio/bells/singing-bowl.wav',
-        'soft-gong': 'audio/bells/gong.wav',
-        'bell': 'audio/bells/temple-bell.wav'
-    },
-    ambient: {
-        'rain': 'audio/ambient/rain.wav',
-        'waves': 'audio/ambient/ocean-waves.wav',
-        'forest': 'audio/ambient/forest.wav',
-        'wind': 'audio/ambient/wind.wav',
-        'fire': 'audio/ambient/fire.wav',
-        'brownNoise': 'audio/ambient/brown-noise.wav',
-        'zen': 'audio/ambient/zen-chimes.wav',
-        'chants': null // Procedural only
-    }
-};
-
-// Decoded audio buffers cache
-const audioBufferCache = new Map();
 
 function initAudioContext() {
     if (!state.audio.context) {
@@ -878,80 +853,12 @@ function initAudioContext() {
     }
 }
 
-/**
- * Preload all audio files into decoded buffers for instant playback
- */
-async function preloadAudioFiles() {
-    initAudioContext();
-    const ctx = state.audio.context;
-    const allFiles = { ...AUDIO_FILES.bells, ...AUDIO_FILES.ambient };
-
-    const loadPromises = Object.entries(allFiles).map(async ([key, path]) => {
-        if (!path || audioBufferCache.has(key)) return;
-        try {
-            const response = await fetch(path);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-            audioBufferCache.set(key, audioBuffer);
-        } catch (e) {
-            console.warn(`Failed to preload audio: ${key}`, e);
-        }
-    });
-
-    await Promise.allSettled(loadPromises);
-}
-
-/**
- * Get a decoded audio buffer by key
- */
-function getAudioBuffer(key) {
-    return audioBufferCache.get(key) || null;
-}
-
-/**
- * Play a sound from a decoded buffer
- */
-function playBufferSound(bufferKey, volumeMultiplier = 1, isCompletion = false) {
-    initAudioContext();
-    const ctx = state.audio.context;
-    const buffer = getAudioBuffer(bufferKey);
-    if (!buffer) return false;
-
-    const source = ctx.createBufferSource();
-    const gainNode = ctx.createGain();
-
-    source.buffer = buffer;
-
-    // For completion bells, let the full sound play; otherwise use original duration
-    const baseVolume = 0.8 * volumeMultiplier;
-    gainNode.gain.setValueAtTime(baseVolume, ctx.currentTime);
-
-    if (!isCompletion && buffer.duration > 5) {
-        // Trim long sounds to 5 seconds for non-completion bells
-        source.loop = false;
-        gainNode.gain.setValueAtTime(baseVolume, ctx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 5);
-        source.stop(ctx.currentTime + 5);
-    }
-
-    source.connect(gainNode);
-    gainNode.connect(state.audio.masterGain);
-
-    source.start(ctx.currentTime);
-    return true;
-}
-
 function playBellSound(volumeMultiplier = 1, isCompletion = false) {
     if (state.audio.bellSound === 'silence') return;
 
     initAudioContext();
 
-    // Try file-based playback first
-    const played = playBufferSound(state.audio.bellSound, volumeMultiplier, isCompletion);
-    if (played) return;
-
-    // Fallback to procedural synthesis
+    // Procedural synthesis
     const ctx = state.audio.context;
     const now = ctx.currentTime;
 
@@ -969,7 +876,7 @@ function playBellSound(volumeMultiplier = 1, isCompletion = false) {
 }
 
 // =============================================
-// Procedural Bell Fallbacks
+// Procedural Bell Synthesis
 // =============================================
 
 function playSingingBowl(ctx, now, volumeMultiplier, isCompletion) {
@@ -1072,11 +979,8 @@ function playTempleBell(ctx, now, volumeMultiplier, isCompletion) {
 }
 
 // =============================================
-// Ambient Sound System (File-Based + Procedural Fallback)
+// Ambient Sound System (Procedural)
 // =============================================
-
-// Track active audio sources for proper cleanup
-let activeAmbientSources = [];
 
 function startAmbientSound() {
     if (state.audio.isAmbientPlaying) return;
@@ -1087,50 +991,18 @@ function startAmbientSound() {
 
     if (soundKey === 'silence') return;
 
-    // Try file-based ambient first
-    const buffer = getAudioBuffer(soundKey);
-    if (buffer) {
-        startFileAmbient(buffer);
-        state.audio.isAmbientPlaying = true;
-        return;
-    }
-
-    // Fallback to procedural synthesis
     switch (soundKey) {
         case 'rain': createRainSound(ctx); break;
         case 'waves': createWavesSound(ctx); break;
         case 'forest': createForestSound(ctx); break;
         case 'wind': createWindSound(ctx); break;
-        case 'zen': createZenSound(ctx); break;
+        case 'zen': createZenMusic(ctx); break;
         case 'fire': createFireSound(ctx); break;
         case 'brownNoise': createBrownNoiseSound(ctx); break;
         case 'chants': createChantsSound(ctx); break;
     }
 
     state.audio.isAmbientPlaying = true;
-}
-
-/**
- * Start ambient sound from a decoded audio buffer with looping
- */
-function startFileAmbient(buffer) {
-    const ctx = state.audio.context;
-
-    const source = ctx.createBufferSource();
-    const gainNode = ctx.createGain();
-
-    source.buffer = buffer;
-    source.loop = true;
-    source.connect(gainNode);
-    gainNode.connect(state.audio.masterGain);
-
-    gainNode.gain.setValueAtTime(0, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(state.audio.volume, ctx.currentTime + 1);
-
-    source.start(ctx.currentTime);
-
-    activeAmbientSources.push(source, gainNode);
-    state.audio.ambientNodes = activeAmbientSources;
 }
 
 function createNoiseBuffer(ctx, type) {
@@ -1292,7 +1164,7 @@ function createWindSound(ctx) {
     registerAmbientNode(gain);
 }
 
-function createZenSound(ctx) {
+function createZenMusic(ctx) {
     const now = ctx.currentTime;
     const baseGain = ctx.createGain();
     baseGain.gain.value = 0.6; // Increased from 0.14
@@ -1396,18 +1268,7 @@ function createChantsSound(ctx) {
 }
 
 function stopAmbientSound() {
-    // Stop all active ambient sources
-    activeAmbientSources.forEach(node => {
-        try {
-            if (node.stop) node.stop();
-        } catch (e) { /* ignore */ }
-        try {
-            if (node.disconnect) node.disconnect();
-        } catch (e) { /* ignore */ }
-    });
-    activeAmbientSources = [];
-
-    // Also stop any registered ambient nodes
+    // Stop all registered ambient nodes
     if (state.audio.ambientNodes && state.audio.ambientNodes.length > 0) {
         state.audio.ambientNodes.forEach(node => {
             try {
