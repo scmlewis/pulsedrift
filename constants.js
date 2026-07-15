@@ -119,6 +119,27 @@ const AUDIO_CONFIG = {
     BELL_DURATION_COMPLETION: 8   // Completion bell sound duration
 };
 
+// Audio file path mapping (sound key → file path without extension)
+const AUDIO_FILE_MAP = {
+    'singing-bowl': 'bells/singing-bowl',
+    'soft-gong': 'bells/soft-gong',
+    'bell': 'bells/temple-bell',
+    'rain': 'ambient/rain',
+    'waves': 'ambient/waves',
+    'forest': 'ambient/forest',
+    'wind': 'ambient/wind',
+    'zen': 'ambient/zen',
+    'fire': 'ambient/fire',
+    'brownNoise': 'ambient/brown-noise',
+    'chants': 'ambient/chants'
+};
+
+// Detect best supported audio format
+function getAudioFormat() {
+    const audio = document.createElement('audio');
+    return audio.canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'mp3';
+}
+
 // =============================================
 // Guided Meditation Defaults
 // =============================================
@@ -265,6 +286,8 @@ if (typeof window !== 'undefined') {
     window.ERROR_MESSAGES = ERROR_MESSAGES;
     window.SUCCESS_MESSAGES = SUCCESS_MESSAGES;
     window.AUDIO_CONFIG = AUDIO_CONFIG;
+    window.AUDIO_FILE_MAP = AUDIO_FILE_MAP;
+    window.getAudioFormat = getAudioFormat;
     window.ACHIEVEMENT_THRESHOLDS = ACHIEVEMENT_THRESHOLDS;
     window.DATA_EXPORT_VERSION = DATA_EXPORT_VERSION;
     window.MOOD_RECOMMENDATIONS = MOOD_RECOMMENDATIONS;
