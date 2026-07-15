@@ -35,7 +35,11 @@ const state = {
         ambientNode: null,
         ambientNodes: [],
         isAmbientPlaying: false,
-        previewTimeout: null
+        previewTimeout: null,
+        // Buffer-based audio system
+        bufferCache: new Map(),
+        activeAmbientSource: null,
+        activeAmbientGain: null
     },
     settings: {
         intervalBell: 0, // minutes, 0 = off
@@ -246,6 +250,7 @@ function init() {
     initMoodRecommendations();
     initEmergencyCalm();
     initCustomSoundUpload();
+    preloadAudioFiles(); // Pre-cache bell sounds for instant playback
     
     // Remove loading state, trigger fade-in
     requestAnimationFrame(() => {
@@ -851,6 +856,45 @@ function initAudioContext() {
     if (state.audio.context.state === 'suspended') {
         state.audio.context.resume();
     }
+}
+
+// =============================================
+// Audio Buffer Infrastructure
+// =============================================
+
+function getAudioBuffer(path, format) {
+    const cacheKey = `${path}.${format}`;
+    if (state.audio.bufferCache.has(cacheKey)) {
+        return Promise.resolve(state.audio.bufferCache.get(cacheKey));
+    }
+
+    return fetch(`audio/${cacheKey}`)
+        .then(response => {
+            if (!response.ok) throw new Error(`Audio fetch failed: ${cacheKey}`);
+            return response.arrayBuffer();
+        })
+        .then(arrayBuffer => state.audio.context.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+            state.audio.bufferCache.set(cacheKey, audioBuffer);
+            return audioBuffer;
+        });
+}
+
+function preloadAudioFiles() {
+    initAudioContext();
+    const format = getAudioFormat();
+    const bellPaths = [
+        'bells/singing-bowl',
+        'bells/singing-bowl-completion',
+        'bells/soft-gong',
+        'bells/soft-gong-completion',
+        'bells/temple-bell',
+        'bells/temple-bell-completion'
+    ];
+
+    return Promise.all(
+        bellPaths.map(path => getAudioBuffer(path, format).catch(() => null))
+    );
 }
 
 function playBellSound(volumeMultiplier = 1, isCompletion = false) {
