@@ -902,19 +902,54 @@ function playBellSound(volumeMultiplier = 1, isCompletion = false) {
 
     initAudioContext();
 
-    // Procedural synthesis
+    const format = getAudioFormat();
+    const base = AUDIO_FILE_MAP[state.audio.bellSound];
+    if (!base) {
+        console.warn(`Unknown bell sound: ${state.audio.bellSound}`);
+        return;
+    }
+    const id = isCompletion ? `${base}-completion` : base;
+
+    getAudioBuffer(id, format)
+        .then(buffer => {
+            const ctx = state.audio.context;
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(state.audio.volume * volumeMultiplier, ctx.currentTime);
+
+            // Gentle fade-out over last 0.5s to prevent pop without cutting natural tail
+            const fadeStart = buffer.duration - 0.5;
+            if (fadeStart > 0) {
+                gain.gain.setValueAtTime(state.audio.volume * volumeMultiplier, ctx.currentTime + fadeStart);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + buffer.duration);
+            }
+
+            source.connect(gain);
+            gain.connect(state.audio.masterGain);
+            source.start();
+        })
+        .catch(err => {
+            console.warn('Buffer playback failed, falling back to procedural:', err);
+            _proceduralFallback_bell(state.audio.bellSound, volumeMultiplier, isCompletion);
+        });
+}
+
+function _proceduralFallback_bell(bellSound, volumeMultiplier, isCompletion) {
+    initAudioContext();
     const ctx = state.audio.context;
     const now = ctx.currentTime;
 
-    switch (state.audio.bellSound) {
+    switch (bellSound) {
         case 'singing-bowl':
-            playSingingBowl(ctx, now, volumeMultiplier, isCompletion);
+            _proceduralFallback_singingBowl(ctx, now, volumeMultiplier, isCompletion);
             break;
         case 'soft-gong':
-            playSoftGong(ctx, now, volumeMultiplier, isCompletion);
+            _proceduralFallback_softGong(ctx, now, volumeMultiplier, isCompletion);
             break;
         case 'bell':
-            playTempleBell(ctx, now, volumeMultiplier, isCompletion);
+            _proceduralFallback_templeBell(ctx, now, volumeMultiplier, isCompletion);
             break;
     }
 }
@@ -923,7 +958,7 @@ function playBellSound(volumeMultiplier = 1, isCompletion = false) {
 // Procedural Bell Synthesis
 // =============================================
 
-function playSingingBowl(ctx, now, volumeMultiplier, isCompletion) {
+function _proceduralFallback_singingBowl(ctx, now, volumeMultiplier, isCompletion) {
     const duration = isCompletion ? 8 : 5;
     const frequencies = isCompletion ? [220, 330, 440, 550] : [220, 330, 440];
 
@@ -957,7 +992,7 @@ function playSingingBowl(ctx, now, volumeMultiplier, isCompletion) {
     });
 }
 
-function playSoftGong(ctx, now, volumeMultiplier, isCompletion) {
+function _proceduralFallback_softGong(ctx, now, volumeMultiplier, isCompletion) {
     const duration = isCompletion ? 6 : 4;
     const freq = isCompletion ? 80 : 100;
 
@@ -988,7 +1023,7 @@ function playSoftGong(ctx, now, volumeMultiplier, isCompletion) {
     });
 }
 
-function playTempleBell(ctx, now, volumeMultiplier, isCompletion) {
+function _proceduralFallback_templeBell(ctx, now, volumeMultiplier, isCompletion) {
     const duration = isCompletion ? 5 : 3;
     const baseFreq = 800;
 
