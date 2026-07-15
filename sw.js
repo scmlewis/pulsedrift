@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pulsedrift-cache-v4';
+const CACHE_NAME = 'pulsedrift-cache-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,23 @@ const ASSETS = [
   './sw.js',
   './manifest.json',
   './icons/icon-192.svg',
-  './icons/icon-512.svg'
+  './icons/icon-512.svg',
+  // Bell sounds
+  './audio/bells/singing-bowl.mp3',
+  './audio/bells/singing-bowl-completion.mp3',
+  './audio/bells/soft-gong.mp3',
+  './audio/bells/soft-gong-completion.mp3',
+  './audio/bells/temple-bell.mp3',
+  './audio/bells/temple-bell-completion.mp3',
+  // Ambient sounds
+  './audio/ambient/rain.mp3',
+  './audio/ambient/waves.mp3',
+  './audio/ambient/forest.mp3',
+  './audio/ambient/wind.mp3',
+  './audio/ambient/zen.mp3',
+  './audio/ambient/fire.mp3',
+  './audio/ambient/brown-noise.mp3',
+  './audio/ambient/chants.mp3'
 ];
 
 self.addEventListener('install', (event) => {
