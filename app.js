@@ -250,7 +250,7 @@ function init() {
     initMoodRecommendations();
     initEmergencyCalm();
     initCustomSoundUpload();
-    preloadAudioFiles(); // Pre-cache bell sounds for instant playback
+    preloadAudioFiles().catch(() => {}); // Pre-cache bell sounds for instant playback
     
     // Remove loading state, trigger fade-in
     requestAnimationFrame(() => {
