@@ -1058,27 +1058,63 @@ function _proceduralFallback_templeBell(ctx, now, volumeMultiplier, isCompletion
 }
 
 // =============================================
-// Ambient Sound System (Procedural)
+// Ambient Sound System (Buffer-Based + Procedural Fallback)
 // =============================================
 
 function startAmbientSound() {
     if (state.audio.isAmbientPlaying) return;
 
     initAudioContext();
-    const ctx = state.audio.context;
-    const soundKey = state.audio.ambientSound;
 
+    const soundKey = state.audio.ambientSound;
     if (soundKey === 'silence') return;
 
+    const format = getAudioFormat();
+    const filePath = AUDIO_FILE_MAP[soundKey];
+
+    if (!filePath) {
+        console.warn(`Unknown ambient sound: ${soundKey}`);
+        return;
+    }
+
+    getAudioBuffer(filePath, format)
+        .then(buffer => {
+            const ctx = state.audio.context;
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0, ctx.currentTime);
+            gain.gain.setTargetAtTime(state.audio.volume, ctx.currentTime, 0.5);
+
+            source.connect(gain);
+            gain.connect(state.audio.masterGain);
+            source.start();
+
+            state.audio.activeAmbientSource = source;
+            state.audio.activeAmbientGain = gain;
+            state.audio.isAmbientPlaying = true;
+        })
+        .catch(err => {
+            console.warn('Buffer ambient failed, falling back to procedural:', err);
+            _proceduralFallback_ambient(soundKey);
+        });
+}
+
+function _proceduralFallback_ambient(soundKey) {
+    initAudioContext();
+    const ctx = state.audio.context;
+
     switch (soundKey) {
-        case 'rain': createRainSound(ctx); break;
-        case 'waves': createWavesSound(ctx); break;
-        case 'forest': createForestSound(ctx); break;
-        case 'wind': createWindSound(ctx); break;
-        case 'zen': createZenMusic(ctx); break;
-        case 'fire': createFireSound(ctx); break;
-        case 'brownNoise': createBrownNoiseSound(ctx); break;
-        case 'chants': createChantsSound(ctx); break;
+        case 'rain': _proceduralFallback_rain(ctx); break;
+        case 'waves': _proceduralFallback_waves(ctx); break;
+        case 'forest': _proceduralFallback_forest(ctx); break;
+        case 'wind': _proceduralFallback_wind(ctx); break;
+        case 'zen': _proceduralFallback_zen(ctx); break;
+        case 'fire': _proceduralFallback_fire(ctx); break;
+        case 'brownNoise': _proceduralFallback_brownNoise(ctx); break;
+        case 'chants': _proceduralFallback_chants(ctx); break;
     }
 
     state.audio.isAmbientPlaying = true;
@@ -1107,7 +1143,7 @@ function createNoiseBuffer(ctx, type) {
     return buffer;
 }
 
-function createRainSound(ctx) {
+function _proceduralFallback_rain(ctx) {
     const noise = ctx.createBufferSource();
     noise.buffer = createNoiseBuffer(ctx, 'pink');
     noise.loop = true;
@@ -1129,7 +1165,7 @@ function createRainSound(ctx) {
     registerAmbientNode(gain);
 }
 
-function createWavesSound(ctx) {
+function _proceduralFallback_waves(ctx) {
     const noise = ctx.createBufferSource();
     noise.buffer = createNoiseBuffer(ctx, 'pink');
     noise.loop = true;
@@ -1162,7 +1198,7 @@ function createWavesSound(ctx) {
     registerAmbientNode(gain);
 }
 
-function createForestSound(ctx) {
+function _proceduralFallback_forest(ctx) {
     // Gentle pink noise for wind
     const noise = ctx.createBufferSource();
     noise.buffer = createNoiseBuffer(ctx, 'pink');
@@ -1210,7 +1246,7 @@ function createForestSound(ctx) {
     scheduleBird();
 }
 
-function createWindSound(ctx) {
+function _proceduralFallback_wind(ctx) {
     const noise = ctx.createBufferSource();
     noise.buffer = createNoiseBuffer(ctx, 'pink');
     noise.loop = true;
@@ -1243,7 +1279,7 @@ function createWindSound(ctx) {
     registerAmbientNode(gain);
 }
 
-function createZenMusic(ctx) {
+function _proceduralFallback_zen(ctx) {
     const now = ctx.currentTime;
     const baseGain = ctx.createGain();
     baseGain.gain.value = 0.6; // Increased from 0.14
@@ -1279,7 +1315,7 @@ function createZenMusic(ctx) {
     registerAmbientNode(baseGain);
 }
 
-function createFireSound(ctx) {
+function _proceduralFallback_fire(ctx) {
     // Smoother fire sound
     const noise = ctx.createBufferSource();
     noise.buffer = createNoiseBuffer(ctx, 'brown'); // Less harsh white noise
@@ -1302,7 +1338,7 @@ function createFireSound(ctx) {
     registerAmbientNode(gain);
 }
 
-function createBrownNoiseSound(ctx) {
+function _proceduralFallback_brownNoise(ctx) {
     const noise = ctx.createBufferSource();
     noise.buffer = createNoiseBuffer(ctx, 'brown');
     noise.loop = true;
@@ -1318,7 +1354,7 @@ function createBrownNoiseSound(ctx) {
     registerAmbientNode(gain);
 }
 
-function createChantsSound(ctx) {
+function _proceduralFallback_chants(ctx) {
     const now = ctx.currentTime;
     const baseGain = ctx.createGain();
     baseGain.gain.value = 0.5; // Louder chants
@@ -1347,18 +1383,22 @@ function createChantsSound(ctx) {
 }
 
 function stopAmbientSound() {
-    // Stop all registered ambient nodes
-    if (state.audio.ambientNodes && state.audio.ambientNodes.length > 0) {
-        state.audio.ambientNodes.forEach(node => {
-            try {
-                if (node.stop) node.stop();
-            } catch (e) { /* ignore */ }
-            try {
-                if (node.disconnect) node.disconnect();
-            } catch (e) { /* ignore */ }
-        });
-        state.audio.ambientNodes = [];
+    if (!state.audio.activeAmbientSource) {
+        state.audio.isAmbientPlaying = false;
+        return;
     }
+
+    const ctx = state.audio.context;
+    const gain = state.audio.activeAmbientGain;
+    const source = state.audio.activeAmbientSource;
+
+    // Fade out then stop
+    gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 2);
+    source.stop(ctx.currentTime + 2.1);
+
+    state.audio.activeAmbientSource = null;
+    state.audio.activeAmbientGain = null;
     state.audio.isAmbientPlaying = false;
 }
 
@@ -2664,12 +2704,12 @@ function playCustomAmbientSound(name) {
 
     audio.play().catch(e => console.warn('Custom audio play failed:', e));
 
-    // Register for cleanup
-    activeAmbientSources.push({
+    // Track for stopAmbientSound compatibility
+    state.audio.activeAmbientSource = {
         stop: () => { audio.pause(); audio.currentTime = 0; },
         disconnect: () => { try { source.disconnect(); gainNode.disconnect(); } catch(e) {} }
-    });
-    state.audio.ambientNodes = activeAmbientSources;
+    };
+    state.audio.activeAmbientGain = gainNode;
     state.audio.isAmbientPlaying = true;
 
     return true;
